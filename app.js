@@ -86,7 +86,7 @@
 
   // level stays null until the server assigns one; pendingId is reused on retry so a lost
   // "start" response can never assign the same participant twice.
-  var state = { level: null, screen: "landing", bg: {}, consent: false, ans: {}, fin: null, pid: null, pendingId: null, starting: false };
+  var state = { level: null, screen: "landing", bg: {}, consent: false, ans: {}, fin: null, pid: null, pendingId: null, starting: false, done: {}, finished: false };
   var view = document.getElementById("view");
 
   /* ---------- server ---------- */
@@ -115,6 +115,47 @@
     var x = Array.prototype.map.call(b, function (n) { return (n + 256).toString(16).slice(1); }).join("");
     return x.slice(0, 8) + "-" + x.slice(8, 12) + "-" + x.slice(12, 16) + "-" + x.slice(16, 20) + "-" + x.slice(20);
   }
+
+  /* ---------- stage timer ---------- */
+  // Starts once the stage's content is painted (fonts loaded + two animation frames) and stops on submit.
+  // time_ms includes time the tab was hidden; hidden_ms reports that part separately.
+  var timer = null;
+
+  function startTimer(stageId) {
+    var t = timer = { stage: stageId, renderedAt: performance.now(), t0: null, hiddenMs: 0, hiddenSince: null };
+    var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    fontsReady.catch(function () {}).then(function () {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          if (timer !== t || t.t0 !== null) return;
+          t.t0 = performance.now();
+          if (document.visibilityState === "hidden") t.hiddenSince = t.t0;
+        });
+      });
+    });
+  }
+
+  function stopTimer(stageId) {
+    var t = timer;
+    timer = null;
+    if (!t || t.stage !== stageId) return null;
+    var now = performance.now();
+    if (t.t0 === null) t.t0 = t.renderedAt; // submitted before the first paint callback; should not happen
+    if (t.hiddenSince !== null) t.hiddenMs += now - t.hiddenSince;
+    return { time_ms: Math.round(now - t.t0), hidden_ms: Math.round(Math.min(t.hiddenMs, now - t.t0)) };
+  }
+
+  document.addEventListener("visibilitychange", function () {
+    var t = timer;
+    if (!t || t.t0 === null) return;
+    var now = performance.now();
+    if (document.visibilityState === "hidden") {
+      if (t.hiddenSince === null) t.hiddenSince = now;
+    } else if (t.hiddenSince !== null) {
+      t.hiddenMs += now - t.hiddenSince;
+      t.hiddenSince = null;
+    }
+  });
 
   function beginExperiment() {
     if (state.starting || state.pid) return;
@@ -276,6 +317,7 @@
   function go(s) {
     state.screen = s;
     render();
+    if (STAGES[s]) startTimer(s); else timer = null;
     window.scrollTo(0, 0);
     try { view.focus({ preventScroll: true }); } catch (e) {}
   }
@@ -325,12 +367,24 @@
       Array.prototype.forEach.call(document.querySelectorAll('input[name="ans"]'), function (r) {
         r.addEventListener("change", function () { state.ans[s] = Number(r.value); document.getElementById("submit").disabled = false; });
       });
-      on("submit", "click", function () { go(s === "s4" ? "final" : "s" + (STAGES[s].no + 1)); });
+      on("submit", "click", function () {
+        if (state.done[s] || state.ans[s] == null) return; // double tap / repeated click
+        state.done[s] = true;
+        this.disabled = true;
+        var t = stopTimer(s);
+        if (window.console && IS_TEST) console.info("stage", STAGES[s].no, t);
+        go(s === "s4" ? "final" : "s" + (STAGES[s].no + 1));
+      });
     } else if (s === "final") {
       Array.prototype.forEach.call(document.querySelectorAll('input[name="fin"]'), function (r) {
         r.addEventListener("change", function () { state.fin = Number(r.value); document.getElementById("finish").disabled = false; });
       });
-      on("finish", "click", function () { go("thanks"); });
+      on("finish", "click", function () {
+        if (state.finished || state.fin == null) return;
+        state.finished = true;
+        this.disabled = true;
+        go("thanks");
+      });
     } else if (s === "declined") {
       on("back", "click", function () { go("landing"); });
     }
