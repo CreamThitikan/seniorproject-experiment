@@ -81,7 +81,14 @@
   ];
 
   var LEVELS = ["L1", "L2", "L3"];
-  var IS_TEST = false;
+  // ?dev=1        researcher bar visible, data saved with is_test=true (separate assignment counter)
+  // ?dev=1&mock=1 no network: an in-page mock stands in for Apps Script (add &fail=1 to make every call fail)
+  var params = new URLSearchParams(location.search);
+  var DEV = params.get("dev") === "1";
+  var MOCK = DEV && params.get("mock") === "1";
+  var MOCK_FAIL = MOCK && params.get("fail") === "1";
+  var IS_TEST = DEV;
+  var STORE_SUFFIX = MOCK ? "_mock" : DEV ? "_dev" : ""; // keeps test sessions/queues apart from real ones
   var REQUEST_TIMEOUT_MS = 15000;
 
   // level stays null until the server assigns one; pendingId is reused on retry so a lost
@@ -92,6 +99,7 @@
   /* ---------- server ---------- */
   // text/plain keeps this a "simple" CORS request, so the browser sends no preflight (Apps Script cannot answer one).
   function post(action, payload) {
+    if (MOCK) return mockPost(action, payload);
     if (!window.APPS_SCRIPT_URL) return Promise.reject(new Error("APPS_SCRIPT_URL is not set in config.js"));
     var data = { action: action };
     for (var k in payload) data[k] = payload[k];
@@ -109,7 +117,7 @@
 
   /* ---------- session (resume after refresh) ---------- */
   // Kept in sessionStorage: survives a refresh of this tab, but a new tab starts a new participant.
-  var SESSION_KEY = "staybook_session";
+  var SESSION_KEY = "staybook_session" + STORE_SUFFIX;
   var RESUMABLE = ["scenario", "s1", "s2", "s3", "s4", "final", "thanks"];
 
   function saveSession() {
@@ -140,8 +148,8 @@
   // Each send gets 1 attempt + 3 retries with backoff; after that the item waits for the next trigger
   // (new item, back online, tab visible again, 30 s interval, next page load). The server ignores
   // duplicates, so resending something that already arrived is harmless.
-  var QUEUE_KEY = "staybook_outbox";
-  var REJECTED_KEY = "staybook_outbox_rejected";
+  var QUEUE_KEY = "staybook_outbox" + STORE_SUFFIX;
+  var REJECTED_KEY = "staybook_outbox_rejected" + STORE_SUFFIX;
   var RETRY_DELAYS_MS = [1000, 3000, 9000];
   var memQueue = null; // fallback when localStorage is unavailable (e.g. blocked storage)
   var flushing = false;
@@ -153,9 +161,11 @@
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
   function enqueue(action, payload) {
+    if (!payload.participant_id) { devLog("not sent (no participant yet — jumped here from the researcher bar)", action, payload); return; }
     var q = loadQueue();
     q.push({ id: uuid(), action: action, payload: payload });
     saveQueue(q);
+    devStatus();
     flush();
   }
 
@@ -178,20 +188,22 @@
     flushing = true;
     sendWithRetry(item, 0).then(function (outcome) {
       flushing = false;
-      if (outcome === "later") return;
+      devLog(outcome, item.action, item.payload);
+      if (outcome === "later") return devStatus();
       saveQueue(loadQueue().filter(function (x) { return x.id !== item.id; }));
       if (outcome === "rejected") {
         var bad = lsGet(REJECTED_KEY) || [];
         bad.push(item);
         lsSet(REJECTED_KEY, bad);
       }
+      devStatus();
       flush();
     });
   }
 
   // Last chance when the tab is closed right after the final answer: keepalive lets the request outlive the page.
   function flushOnExit() {
-    if (!window.APPS_SCRIPT_URL) return;
+    if (MOCK || !window.APPS_SCRIPT_URL) return;
     loadQueue().forEach(function (item) {
       var data = { action: item.action };
       for (var k in item.payload) data[k] = item.payload[k];
@@ -213,6 +225,60 @@
     b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
     var x = Array.prototype.map.call(b, function (n) { return (n + 256).toString(16).slice(1); }).join("");
     return x.slice(0, 8) + "-" + x.slice(8, 12) + "-" + x.slice(12, 16) + "-" + x.slice(16, 20) + "-" + x.slice(20);
+  }
+
+  /* ---------- dev / mock ---------- */
+  function devLog() {
+    if (DEV && window.console) console.info.apply(console, ["[staybook]"].concat([].slice.call(arguments)));
+  }
+
+  function devStatus() {
+    var el = document.getElementById("devStatus");
+    if (!DEV || !el) return;
+    el.textContent = (MOCK ? "mock · " : "is_test · ") + (state.pid ? "ID " + state.pid.slice(0, 8) + " · " + state.level : "ยังไม่เริ่ม") +
+      " · ค้างส่ง " + loadQueue().length;
+  }
+
+  // In-page stand-in for apps-script/Code.gs. Data lives in localStorage "staybook_mock_db".
+  var MOCK_DB_KEY = "staybook_mock_db";
+  var MOCK_CORRECT = { 1: 1, 2: 2, 3: 1, 4: 0 }; // index of the correct reason; Code.gs matches by text
+  function mockPost(action, p) {
+    return wait(300).then(function () {
+      if (MOCK_FAIL) throw new Error("mock network failure (&fail=1)");
+      var db = lsGet(MOCK_DB_KEY) || { test_counter: 0, participants: {}, responses: [] };
+      var me = db.participants[p.participant_id];
+      var res = { ok: true };
+      if (action === "start") {
+        if (!me) {
+          me = db.participants[p.participant_id] = { assigned_level: LEVELS[db.test_counter % 3], started_at: new Date().toISOString(), is_test: true };
+          db.test_counter++;
+        }
+        res = { ok: true, participant_id: p.participant_id, level: me.assigned_level };
+      } else if (!me) {
+        res = { ok: false, error: "unknown_participant", retry: false };
+      } else if (action === "profile") {
+        me.age_range = BG[0].opts[p.age]; me.booked_before = BG[1].opts[p.booked]; me.cancel_experience = BG[2].opts[p.exp];
+      } else if (action === "answer") {
+        var dup = db.responses.some(function (r) { return r.participant_id === p.participant_id && r.stage === p.stage; });
+        if (dup) res = { ok: true, duplicate: true };
+        else {
+          var isD = p.option_index === 3, right = p.option_index === MOCK_CORRECT[p.stage];
+          var c = p.level === "L1"
+            ? (isD ? [1, "ตอบตามหน้าจอ"] : [0, right ? "ตอบเกินข้อมูล + ถูก" : "ตอบเกินข้อมูล + ผิด"])
+            : (right ? [1, "ตอบตามหน้าจอ"] : [0, isD ? "หาไม่เจอ" : "เข้าใจผิด"]);
+          db.responses.push({
+            participant_id: p.participant_id, level: p.level, stage: p.stage, option_index: p.option_index,
+            option_label: "ABCD".charAt(p.option_index), option_text: STAGES["s" + p.stage].opts[p.option_index],
+            time_ms: p.time_ms, hidden_ms: p.hidden_ms, resumed: p.resumed, submitted_at: new Date().toISOString(),
+            expected_correct: c[0], response_type: c[1], is_test: true
+          });
+        }
+      } else if (action === "finish") {
+        me.manipulation_check = p.manipulation_check; me.completed = true; me.completed_at = new Date().toISOString();
+      }
+      lsSet(MOCK_DB_KEY, db);
+      return res;
+    });
   }
 
   /* ---------- stage timer ---------- */
@@ -417,6 +483,7 @@
   function go(s) {
     state.screen = s;
     if (state.pid) saveSession();
+    devStatus();
     render();
     if (STAGES[s]) startTimer(s); else timer = null;
     window.scrollTo(0, 0);
@@ -498,13 +565,23 @@
   /* researcher bar */
   var jump = document.getElementById("jump");
   jump.innerHTML = SCREENS.map(function (x) { return '<option value="' + x[0] + '">' + h(x[1]) + '</option>'; }).join("");
-  jump.addEventListener("change", function () { go(jump.value); });
+  jump.addEventListener("change", function () { if (DEV) go(jump.value); });
   Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
-    b.addEventListener("click", function () { state.level = b.dataset.level; render(); });
+    b.addEventListener("click", function () {
+      if (!DEV) return;
+      state.level = b.dataset.level;
+      go(state.screen); // re-render and restart the stage timer; later answers are sent with this level (is_test only)
+    });
   });
   document.getElementById("hideBar").addEventListener("click", function () { document.getElementById("rbar").hidden = true; });
 
   restoreSession();
+  if (DEV) {
+    document.getElementById("rbar").hidden = false;
+    if (!state.level) state.level = "L2"; // preview level before "start"; the server's assignment replaces it
+    window.staybookDebug = { state: state, queue: loadQueue, mockDb: function () { return lsGet(MOCK_DB_KEY); } };
+  }
   go(state.screen);
+  devStatus();
   flush();
 })();
