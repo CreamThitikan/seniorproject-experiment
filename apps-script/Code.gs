@@ -59,7 +59,7 @@ var RT = {
 };
 
 var COUNTER_KEYS = { real: "counter", test: "test_counter" };
-var MAX_TIME_MS = 6 * 60 * 60 * 1000;
+var MAX_TIME_MS = 30 * 24 * 60 * 60 * 1000; // sanity bound only; long times are kept and handled in analysis
 var ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /* ---------------- HTTP entry points ---------------- */

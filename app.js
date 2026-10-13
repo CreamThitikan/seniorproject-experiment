@@ -288,6 +288,7 @@
 
   function startTimer(stageId) {
     var t = timer = { stage: stageId, renderedAt: performance.now(), t0: null, hiddenMs: 0, hiddenSince: null };
+    void document.body.offsetHeight; // force layout so any font the new content needs starts loading before fonts.ready is read
     var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
     fontsReady.catch(function () {}).then(function () {
       requestAnimationFrame(function () {
@@ -565,7 +566,12 @@
   /* researcher bar */
   var jump = document.getElementById("jump");
   jump.innerHTML = SCREENS.map(function (x) { return '<option value="' + x[0] + '">' + h(x[1]) + '</option>'; }).join("");
-  jump.addEventListener("change", function () { if (DEV) go(jump.value); });
+  jump.addEventListener("change", function () {
+    if (!DEV) return;
+    state.done[jump.value] = false; // allow answering a revisited stage again (the server keeps only the first answer)
+    if (jump.value === "final") state.finished = false;
+    go(jump.value);
+  });
   Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
     b.addEventListener("click", function () {
       if (!DEV) return;
