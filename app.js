@@ -86,7 +86,7 @@
 
   // level stays null until the server assigns one; pendingId is reused on retry so a lost
   // "start" response can never assign the same participant twice.
-  var state = { level: null, screen: "landing", bg: {}, consent: false, ans: {}, fin: null, pid: null, pendingId: null, starting: false, done: {}, finished: false };
+  var state = { level: null, screen: "landing", bg: {}, consent: false, ans: {}, fin: null, pid: null, pendingId: null, starting: false, done: {}, finished: false, resumed: false };
   var view = document.getElementById("view");
 
   /* ---------- server ---------- */
@@ -105,6 +105,34 @@
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
     }, function (e) { clearTimeout(timer); throw e; });
+  }
+
+  /* ---------- session (resume after refresh) ---------- */
+  // Kept in sessionStorage: survives a refresh of this tab, but a new tab starts a new participant.
+  var SESSION_KEY = "staybook_session";
+  var RESUMABLE = ["scenario", "s1", "s2", "s3", "s4", "final", "thanks"];
+
+  function saveSession() {
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+        pid: state.pid, pendingId: state.pendingId, level: state.level, screen: state.screen,
+        done: state.done, finished: state.finished, resumed: state.resumed
+      }));
+    } catch (e) {}
+  }
+
+  function restoreSession() {
+    var saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null"); } catch (e) {}
+    if (!saved) return;
+    state.pendingId = saved.pendingId || null;
+    if (!saved.pid || LEVELS.indexOf(saved.level) < 0 || RESUMABLE.indexOf(saved.screen) < 0) return;
+    state.pid = saved.pid;
+    state.level = saved.level;
+    state.screen = saved.screen;
+    state.done = saved.done || {};
+    state.finished = !!saved.finished;
+    state.resumed = true; // every stage answered from now on is flagged resumed=true
   }
 
   /* ---------- outbox: profile / answer / finish ---------- */
@@ -231,7 +259,7 @@
   function beginExperiment() {
     if (state.starting || state.pid) return;
     state.starting = true;
-    if (!state.pendingId) state.pendingId = uuid();
+    if (!state.pendingId) { state.pendingId = uuid(); saveSession(); }
     var startBtn = document.getElementById("start"), retryBtn = document.getElementById("retry");
     startBtn.disabled = true;
     retryBtn.disabled = true;
@@ -388,6 +416,7 @@
   /* ---------- wiring ---------- */
   function go(s) {
     state.screen = s;
+    if (state.pid) saveSession();
     render();
     if (STAGES[s]) startTimer(s); else timer = null;
     window.scrollTo(0, 0);
@@ -446,7 +475,7 @@
         var t = stopTimer(s);
         enqueue("answer", {
           participant_id: state.pid, level: state.level, stage: STAGES[s].no, option_index: state.ans[s],
-          time_ms: t ? t.time_ms : 0, hidden_ms: t ? t.hidden_ms : 0, resumed: false
+          time_ms: t ? t.time_ms : 0, hidden_ms: t ? t.hidden_ms : 0, resumed: state.resumed
         });
         go(s === "s4" ? "final" : "s" + (STAGES[s].no + 1));
       });
@@ -475,6 +504,7 @@
   });
   document.getElementById("hideBar").addEventListener("click", function () { document.getElementById("rbar").hidden = true; });
 
-  render();
+  restoreSession();
+  go(state.screen);
   flush();
 })();
