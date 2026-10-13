@@ -1,0 +1,474 @@
+<title>StayBook ต้นแบบการทดลอง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: single centered column (max 680px). Researcher bar on top is separate from the participant UI.
+   Every stage uses the same structure: context line, booking card, information panel, question card. */
+:root {
+  --bg: #ECF1F8;
+  --surface: #FFFFFF;
+  --field: #F5F8FC;
+  --ink: #12203A;
+  --muted: #52647E;
+  --line: #D2DBE8;
+  --brand: #1F55C7;
+  --brand-ink: #FFFFFF;
+  --brand-soft: #E3ECFB;
+  --ok: #1D7A4B;
+  --err: #B3261E;
+  --err-soft: #FCEAE8;
+  --rbar: #17233A;
+  --rbar-ink: #E8EEF6;
+  --rbar-line: #33445F;
+  --font-display: "Prompt", "Sarabun", system-ui, sans-serif;
+  --font-body: "Sarabun", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1526; --surface: #162036; --field: #101A2E; --ink: #E6ECF8; --muted: #9AABC8;
+    --line: #29395A; --brand: #7FA8FF; --brand-ink: #0A1B3D; --brand-soft: #1A2B50;
+    --ok: #5CC892; --err: #FF8A80; --err-soft: #3A1F1D; --rbar: #09101D; --rbar-ink: #E8EEF6; --rbar-line: #29395A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1526; --surface: #162036; --field: #101A2E; --ink: #E6ECF8; --muted: #9AABC8;
+  --line: #29395A; --brand: #7FA8FF; --brand-ink: #0A1B3D; --brand-soft: #1A2B50;
+  --ok: #5CC892; --err: #FF8A80; --err-soft: #3A1F1D; --rbar: #09101D; --rbar-ink: #E8EEF6; --rbar-line: #29395A;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.65; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
+
+/* researcher bar */
+.rbar { background: var(--rbar); color: var(--rbar-ink); font-size: 14px; line-height: 1.5; padding-block: 10px; padding-inline: 16px; }
+.rbar-in { max-width: 680px; margin-inline: auto; display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.rbar b { font-family: var(--font-display); font-weight: 500; }
+.seg { display: inline-flex; border: 1px solid var(--rbar-line); border-radius: 8px; overflow: hidden; }
+.seg button { background: transparent; border: 0; padding: 4px 14px; color: var(--rbar-ink); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rbar-line); }
+.seg button[aria-pressed="true"] { background: var(--rbar-ink); color: var(--rbar); font-weight: 600; }
+.rbar select { background: transparent; border: 1px solid var(--rbar-line); border-radius: 8px; padding: 4px 8px; color: var(--rbar-ink); max-width: 100%; }
+.rbar select option { color: #13202B; }
+.rbar .link { background: none; border: 0; color: var(--rbar-ink); text-decoration: underline; cursor: pointer; padding: 4px; }
+.rbar details { flex-basis: 100%; }
+.rbar summary { cursor: pointer; }
+.rbar ul { margin: 8px 0 2px; padding-left: 20px; display: grid; gap: 4px; color: #C9D4DE; }
+.rbar[hidden] { display: none; }
+
+/* participant UI */
+.wrap { max-width: 680px; margin-inline: auto; padding-inline: 16px; padding-block: 20px 56px; display: grid; gap: 16px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.logo { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: .2px; }
+.logo svg { display: block; }
+.sim { font-size: 14px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; background: var(--surface); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.35; margin: 0; text-wrap: balance; }
+h1 { font-size: 26px; }
+h2 { font-size: 20px; }
+h3 { font-size: 17px; }
+p { margin: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 15px; }
+.list { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+
+.progress { display: grid; gap: 6px; }
+.progress .bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.progress .bars i { height: 6px; border-radius: 3px; background: var(--line); }
+.progress .bars i.on { background: var(--brand); }
+.progress span { font-size: 14px; color: var(--muted); }
+
+.ctx { font-style: normal; color: var(--ink); padding-left: 14px; border-left: 3px solid var(--line); }
+.booking { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: end; }
+.booking .logo { grid-column: 1 / -1; padding-bottom: 12px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.scn { display: grid; gap: 8px; }
+.ln { display: flex; gap: 10px; align-items: flex-start; }
+.ln .tk { flex: none; margin-top: 5px; color: var(--brand); }
+.ln span { min-width: 0; }
+.scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.sc-opt { position: relative; display: block; }
+.sc-opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.sc-opt span { display: grid; place-items: center; height: 54px; border: 1.5px solid var(--line); background: var(--field); border-radius: 10px; font-family: var(--font-display); font-weight: 600; font-size: 20px; }
+.sc-opt:hover span { border-color: var(--muted); }
+.sc-opt input:checked + span { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.sc-opt input:focus-visible + span { outline: 3px solid var(--brand); outline-offset: 2px; }
+.scale-ends { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 15px; margin-top: 10px; }
+.booking .name { font-family: var(--font-display); font-weight: 600; font-size: 19px; }
+.booking .paid { font-family: var(--font-display); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.booking .paid small { display: block; font-family: var(--font-body); font-weight: 400; color: var(--muted); font-size: 14px; }
+.booking .meta { color: var(--muted); }
+
+.panel { display: grid; gap: 18px; }
+.block { display: grid; gap: 10px; min-width: 0; }
+.block + .block { border-top: 1px solid var(--line); padding-top: 18px; }
+.rows { margin: 0; display: grid; gap: 8px; }
+.rows > div { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 12px; }
+.rows dt { color: var(--muted); }
+.rows dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.hl { font-family: var(--font-display); font-weight: 600; font-size: 19px; }
+.notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; color: var(--muted); font-size: 15.5px; }
+.tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+td { padding: 10px 14px; vertical-align: top; }
+tr + tr td { border-top: 1px solid var(--line); }
+td:last-child { font-weight: 600; white-space: nowrap; text-align: right; }
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.steps li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 0 12px; position: relative; padding-bottom: 14px; }
+.steps li:last-child { padding-bottom: 0; }
+.steps li::before { content: ""; position: absolute; left: 13px; top: 26px; bottom: 0; width: 2px; background: var(--line); }
+.steps li:last-child::before { display: none; }
+.dot { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); border: 2px solid var(--brand); }
+.dot.now::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); }
+.steps .t { font-weight: 600; }
+.steps .d { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.steps .desc { color: var(--muted); font-size: 15.5px; }
+
+.qcard { border-color: var(--brand); border-width: 2px; }
+.qlabel { font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); font-weight: 700; }
+.opts { display: grid; gap: 10px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.opt { display: flex; gap: 12px; align-items: flex-start; border: 1.5px solid var(--line); background: var(--field); border-radius: 10px; padding: 12px 14px; cursor: pointer; min-width: 0; }
+.opt:hover { border-color: var(--muted); }
+.opt:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
+.opt input { margin-top: 5px; width: 18px; height: 18px; accent-color: var(--brand); flex: none; }
+.opt span { min-width: 0; overflow-wrap: anywhere; }
+.btns { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn { background: var(--brand); color: var(--brand-ink); border: 0; border-radius: 10px; padding: 12px 24px; font-weight: 600; cursor: pointer; }
+.btn:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+.txtbtn { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 8px 4px; }
+.err { background: var(--err-soft); color: var(--err); border-radius: 8px; padding: 10px 14px; font-weight: 600; }
+.q { font-size: 21px; }
+.fq legend { font-family: var(--font-display); font-weight: 600; font-size: 18px; padding: 0; margin-bottom: 10px; line-height: 1.4; }
+.consent-box { background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.ph { border: 1.5px dashed var(--muted); border-radius: 8px; padding: 8px 12px; color: var(--muted); font-size: 15px; }
+.check { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+.check input { margin-top: 6px; width: 20px; height: 20px; accent-color: var(--brand); flex: none; }
+.sec-no { display: inline-grid; place-items: center; }
+@media (max-width: 480px) {
+  body { font-size: 16.5px; }
+  .card { padding: 16px; }
+  .rows > div { grid-template-columns: 1fr; gap: 0; }
+  h1 { font-size: 23px; }
+  .btn { width: 100%; }
+}
+</style>
+
+<div class="rbar" id="rbar">
+  <div class="rbar-in">
+    <b>แถบผู้วิจัย (ผู้เข้าร่วมจะไม่เห็นแถบนี้)</b>
+    <div class="seg" role="group" aria-label="เลือกระดับข้อมูล">
+      <button type="button" data-level="L1" aria-pressed="false">L1</button>
+      <button type="button" data-level="L2" aria-pressed="true">L2</button>
+      <button type="button" data-level="L3" aria-pressed="false">L3</button>
+    </div>
+    <label for="jump" class="small">ไปที่หน้า</label>
+    <select id="jump" aria-label="ไปที่หน้า"></select>
+    <button type="button" class="link" id="hideBar">ซ่อนแถบ</button>
+    <details>
+      <summary>ประเด็นที่ยังรอผู้วิจัยยืนยัน</summary>
+      <ul>
+        <li>Stage 2 L3: "ส่งอีเมลยืนยันแล้ว" (ข้อ C) และ "แจ้งเจ้าของที่พักแล้ว" (ข้อ B) ตอบคำถามได้ทั้งคู่</li>
+        <li>Stage 2: L2 ใช้ "ส่งอีเมลยืนยันแล้ว" แต่ L3 ใช้ "ส่งอีเมลยืนยันยกเลิกการจองแล้ว" ตาม Google Doc ล่าสุด และใน Google Doc L3 ยังมีบรรทัด "ไม่เห็นด้วยติดต่อ Support ภายใน 30 วัน" ซึ่ง prototype ไม่ใส่ตามที่ตกลงไว้</li>
+        <li>Stage 4 L3 พูดถึง "วันทำการ" และระยะเวลาของช่องทางอื่น ซึ่งอาจเป็นข้อมูลที่ไม่มีหลักฐานรองรับ</li>
+        <li>Stage 2 L1 จัดลำดับแถวให้ตรงกับ L2/L3 (การจอง แล้วตามด้วยสถานะ) ต่างจากไฟล์เดิม</li>
+        <li>ไม่มีตัวเลือก "ไม่แน่ใจ" ตามที่ผู้วิจัยเลือก ทั้งที่เอกสารกำหนดให้มีทุกข้อ</li>
+        <li>เบอร์โทรใน Stage 4 ยังเป็น 081-xxx-xxxx และข้อความ consent ยังไม่มีข้อมูลการเก็บรักษาและเลขอนุมัติจริยธรรม</li>
+        <li>คำถามท้ายสุด (manipulation check) เป็นร่างของ prototype ใช้สเกล 1–5</li>
+        <li>ยังไม่มีการจับเวลา สุ่มกลุ่ม หรือเก็บข้อมูลจริง</li>
+      </ul>
+    </details>
+  </div>
+</div>
+
+<div class="wrap">
+  <main id="view" tabindex="-1"></main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var BOOKING = { name: "Doi View Villa", place: "เชียงใหม่", dates: "14–16 พ.ย. 2569 (2 คืน)", paid: "฿6,000" };
+
+  var POLICY = [["ยกเลิกก่อนเช็คอิน มากกว่าหรือเท่ากับ 14 วัน", "คืนเงินเต็มจำนวน"], ["ยกเลิกก่อนเช็คอิน 7-13 วัน", "คืนเงิน 50%"], ["ยกเลิกก่อนเช็คอินน้อยกว่า 7 วัน", "ไม่คืนเงิน"]];
+
+  var NOTES4 = ["*ระยะเวลาที่ได้รับจริงอาจแตกต่างกันตามแต่ละธนาคารและช่องทางการรับเงิน", "*หากยังไม่พบเงินคืนหลังวันที่ 20 พ.ย. สามารถติดต่อ StayBook โทร.081-xxx-xxxx"];
+  var TXT4 = "เงินคืนถูกส่งให้ธนาคารแล้ว และธนาคารต้องใช้เวลาในการประมวลผลก่อนเงินจะแสดงในบัญชีของคุณ";
+
+  var STAGES = {
+    s1: {
+      no: 1, heading: "ยกเลิกการจอง",
+      ctx: "คุณเปิดหน้ายกเลิกเพื่อดูว่ายกเลิกแล้วจะได้เงินคืนเท่าไร",
+      q: "ทำไมคุณถึงได้เงินคืนแค่บางส่วน?",
+      opts: ["เกิดเหตุร้ายแรง", "ยกเลิกก่อนเช็คอิน 9 วัน", "จ่ายด้วยบัตรเครดิต", "ในหน้านี้ไม่ได้ระบุ"],
+      L: {
+        L1: [{ title: "เงื่อนไขการขอคืนเงินหากยกเลิกตอนนี้", rows: [["ประเภทเงินคืน", "คืนบางส่วน"], ["จำนวนเงินคืน", "฿3,000"], ["ช่องทางการรับเงิน", "บัตรเครดิต ••4821"]] }],
+        L2: [
+          { title: "เงื่อนไขการขอคืนเงินหากยกเลิกตอนนี้", rows: [["ประเภทเงินคืน", "คืนบางส่วน"], ["จำนวนเงินคืน", "฿3,000"], ["เหตุผล", "ยกเลิกก่อนเช็คอิน 9 วัน"], ["ช่องทางการรับเงิน", "บัตรเครดิต ••4821"]] },
+          { title: "นโยบายการคืนเงิน", table: POLICY }
+        ],
+        L3: [
+          { title: "เงื่อนไขการขอคืนเงินหากยกเลิกตอนนี้", rows: [["ประเภทเงินคืน", "คืนบางส่วน (ประเภทเงินคืนทั้งหมด: คืนเงินเต็มจำนวน, คืนเงินบางส่วน, ไม่คืนเงิน)"], ["จำนวนเงินคืน", "฿3,000"], ["เหตุผล", "ยกเลิกก่อนเช็คอิน 9 วัน"], ["คืนเงินไปที่", "บัตรเครดิต ••4821 (ช่องทางที่ท่านใช้ในการชำระเงิน)"]] },
+          { title: "นโยบายการคืนเงิน", table: POLICY },
+          { title: "นโยบายการคืนเงินเมื่อเกิดเหตุการณ์ร้ายแรง", text: "หากเกิดเหตุการณ์ร้ายแรงที่อยู่นอกเหนือการควบคุม เช่น ภัยธรรมชาติหรือข้อจำกัดการเดินทางจากหน่วยงานรัฐ ซึ่งทำให้ไม่สามารถเข้าพักได้ อาจมีสิทธิ์ได้รับข้อยกเว้นจากนโยบายการยกเลิกปกติ โดย StayBook จะพิจารณาตามเงื่อนไขของเหตุการณ์" }
+        ]
+      }
+    },
+    s2: {
+      no: 2, heading: "ผลการยกเลิกและคำขอคืนเงิน",
+      ctx: "หลังจากคุณกดยกเลิกการจองและขอเงินคืน คุณตรวจสอบว่าคำขอคืนเงินได้รับการอนุมัติหรือไม่",
+      q: "StayBook ทำอะไรเพื่อยืนยันว่าการจองยกเลิกแล้ว?",
+      opts: ["โทรแจ้ง", "แจ้งเจ้าของที่พัก", "ส่งอีเมลยืนยัน", "ในหน้านี้ไม่ได้ระบุ"],
+      L: {
+        L1: [{ rows: [["การจอง", "ยกเลิกแล้ว"], ["สถานะ", "คำขออนุมัติแล้ว"]] }],
+        L2: [{ rows: [["การจอง", "ยกเลิกแล้ว"], ["สถานะ", "คำขออนุมัติแล้ว"]], lines: ["อนุมัติตามนโยบายการคืนเงิน", "✓ ส่งอีเมลยืนยันแล้ว"] }],
+        L3: [{ rows: [["การจอง", "ยกเลิกแล้ว"], ["", "กู้คืนการจองไม่ได้"], ["สถานะ", "คำขออนุมัติแล้ว"]], lines: ["อนุมัติตามนโยบายการคืนเงิน", "ตัดสินโดยระบบอัตโนมัติ ไม่ต้องรอเจ้าของที่พัก", "✓ ส่งอีเมลยืนยันยกเลิกการจองแล้ว", "✓ แจ้งเจ้าของที่พักแล้ว"] }]
+      }
+    },
+    s3: {
+      no: 3, heading: "การคืนเงินของคุณ",
+      ctx: "4 วันต่อมา วันนี้เป็นวันที่ 9 พ.ย. 2569 คุณเข้ามาเช็คสถานะการคืนเงิน",
+      q: "ทำไมเงินของคุณถึงยังไม่เข้าบัตร?",
+      opts: ["StayBook ยังตรวจสอบคำขออยู่", "StayBook ส่งเงินแล้ว ตอนนี้รอธนาคารดำเนินการ", "รอเจ้าของที่พักดำเนินการ", "ในหน้านี้ไม่ได้ระบุ"],
+      L: {
+        L1: [{ rows: [["อัปเดตล่าสุด", "9 พ.ย."], ["จำนวนเงินคืน", "฿3,000"], ["ช่องทางรับเงินคืน", "บัตรเครดิต ••4821"], ["สถานะการคืนเงิน", "กำลังดำเนินการ"]] }],
+        L2: [{ rows: [["อัปเดตล่าสุด", "9 พ.ย."], ["จำนวนเงินคืน", "฿3,000"], ["ช่องทางรับเงินคืน", "บัตรเครดิต ••4821"], ["สถานะการคืนเงิน", "กำลังดำเนินการ"]],
+          steps: [["done", "อนุมัติการคืนเงิน", "5 พ.ย.", "คำขอคืนเงินได้รับการอนุมัติตามเงื่อนไขการยกเลิกของการจอง"], ["done", "ส่งรายการคืนเงินให้ธนาคาร", "6 พ.ย.", "StayBook ส่งรายการคืนเงินไปยังธนาคารผู้ออกบัตรตามช่องทางการชำระเงินเดิม"], ["now", "ธนาคารกำลังดำเนินการ", "ปัจจุบัน", "ธนาคารกำลังตรวจสอบและประมวลผลรายการคืนเงินก่อนส่งยอดเงินคืนไปยังบัญชีบัตรของคุณ"]] }],
+        L3: [{ rows: [["อัปเดตล่าสุด", "9 พ.ย."], ["จำนวนเงินคืน", "฿3,000"], ["ช่องทางรับเงินคืน", "บัตรเครดิต ••4821"], ["สถานะการคืนเงิน", "กำลังดำเนินการ"]],
+          steps: [["done", "อนุมัติการคืนเงิน", "5 พ.ย.", "คำขอคืนเงินได้รับการอนุมัติตามเงื่อนไขการยกเลิกของการจอง", "* หากการจองต้องให้เจ้าของที่พักยืนยัน หรือเป็นคำขอคืนเงินนอกเหนือจากนโยบาย คำขอจะถูกส่งให้ทีมงาน StayBook ตรวจสอบเพิ่มเติมก่อนอนุมัติ"], ["done", "ส่งรายการคืนเงินให้ธนาคาร", "6 พ.ย.", "StayBook ส่งรายการคืนเงินไปยังธนาคารผู้ออกบัตรตามช่องทางการชำระเงินเดิม", "* หากบัตรที่ใช้ชำระเงินถูกยกเลิกหรือหมดอายุแล้ว ธนาคารผู้ออกบัตรจะเป็นผู้นำยอดเงินคืนเข้าบัญชีที่ผูกกับบัตรนั้น"], ["now", "ธนาคารกำลังดำเนินการ", "ปัจจุบัน", "ธนาคารกำลังตรวจสอบและประมวลผลรายการคืนเงินก่อนส่งยอดเงินคืนไปยังบัญชีบัตรของคุณ", "* หากชำระด้วยบัตรที่ออกโดยธนาคารต่างประเทศ ธนาคารผู้ออกบัตรอาจต้องตรวจสอบรายการเพิ่มเติมก่อนนำยอดเงินคืนเข้าบัญชีบัตร"]],
+          notes: ["*หลังจากส่งข้อมูลให้ธนาคารแล้วการประมวลผลขึ้นอยู่กับธนาคาร", "*การแสดงสถานะหรือรายละเอียดรายการอาจแตกต่างกันตามธนาคาร"] }]
+      }
+    },
+    s4: {
+      no: 4, heading: "รายละเอียดการคืนเงิน",
+      ctx: "คุณกดเข้าอีกหน้าหนึ่ง เพื่อดูว่าคุณจะได้รับเงินคืนเมื่อไร",
+      q: "หากเกินวันที่ 20 พ.ย. แล้วเงินยังไม่เข้าบัญชีของคุณ คุณควรทำอย่างไรต่อ?",
+      opts: ["โทรติดต่อ StayBook", "ยื่นคำขอคืนเงินใหม่", "ติดต่อเจ้าของที่พัก", "ในหน้านี้ไม่ได้ระบุ"],
+      L: {
+        L1: [{ rows: [["จำนวนเงินคืน", "฿3,000"], ["คืนเงินไปที่", "บัตรเครดิต ••4821"]] }, { title: "ระยะเวลาการคืนเงิน", hl: "คาดว่าจะได้รับเงินคืนภายใน 20 พ.ย." }],
+        L2: [{ rows: [["จำนวนเงินคืน", "฿3,000"], ["คืนเงินไปที่", "บัตรเครดิต ••4821"]] }, { title: "ระยะเวลาการคืนเงิน", hl: "คาดว่าจะได้รับเงินคืนภายใน 20 พ.ย.", text: TXT4, notes: NOTES4 }],
+        L3: [{ rows: [["จำนวนเงินคืน", "฿3,000"], ["คืนเงินไปที่", "บัตรเครดิต ••4821"]] }, { title: "ระยะเวลาการคืนเงิน", hl: "คาดว่าจะได้รับเงินคืนภายใน 20 พ.ย.", text: TXT4, notes: NOTES4 },
+          { title: "ระยะเวลาคืนเงินแต่ละกรณี", text: "ระยะเวลาที่เงินคืนแสดงในบัญชีอาจแตกต่างกันตามช่องทางการชำระเงิน",
+            rows: [["บัตรเดบิต", "เงินคืนอาจใช้เวลาหลายวันทำการกว่าจะแสดงในบัญชี"], ["การโอนเงินผ่านธนาคาร", "เงินคืนอาจใช้เวลาหลายวันทำการในการประมวลผล"], ["กระเป๋าเงินดิจิทัล", "เงินคืนอาจแสดงในบัญชีเร็วกว่าการคืนเงินผ่านบัตรในบางกรณี"], ["การชำระเงินผ่านผู้ให้บริการภายนอก", "ระยะเวลาการคืนเงินอาจขึ้นอยู่กับผู้ให้บริการที่ทำรายการชำระเงิน"], ["การจองที่พักที่เป็นผู้ดำเนินการชำระเงิน", "ระยะเวลาการคืนเงินอาจแตกต่างจากการชำระเงินที่ดำเนินการโดยแพลตฟอร์ม"], ["การคืนเงินหลายรายการ", "เงินคืนแต่ละรายการอาจแสดงในบัญชีในเวลาที่แตกต่างกัน"]] }]
+      }
+    }
+  };
+
+  var BG = [
+    { key: "age", q: "ช่วงอายุของคุณ", opts: ["18–24 ปี", "25–34 ปี", "35 ปีขึ้นไป", "ไม่ประสงค์ระบุ"] },
+    { key: "booked", q: "คุณเคยจองที่พักผ่านแพลตฟอร์มจองที่พักออนไลน์หรือไม่", opts: ["เคย", "ไม่เคย"] },
+    { key: "exp", q: "ข้อใดตรงกับประสบการณ์เรื่องการยกเลิกที่พักและการรอเงินคืนของคุณมากที่สุด", opts: ["เคยยกเลิกการจองที่พัก และเคยรอรับเงินคืน", "เคยยกเลิกการจองที่พัก แต่ไม่เคยรอรับเงินคืน", "ไม่เคยยกเลิกการจองที่พัก"] }
+  ];
+
+  var FINAL = { q: "จากข้อมูลการคืนเงินที่คุณเห็นตลอดการทดลอง คุณคิดว่าปริมาณข้อมูลอยู่ในระดับใด (เลือก 1–5)" };
+
+  var SCREENS = [
+    ["landing", "หน้าแรก"], ["scenario", "แนะนำสถานการณ์"], ["s1", "Stage 1 สิทธิ์การขอคืนเงิน"], ["s2", "Stage 2 ผลคำขอ"],
+    ["s3", "Stage 3 สถานะ"], ["s4", "Stage 4 ระยะเวลา"], ["final", "คำถามสุดท้าย"], ["thanks", "หน้าขอบคุณ"], ["declined", "หน้าไม่ประสงค์เข้าร่วม"]
+  ];
+
+  var state = { level: "L2", screen: "landing", bg: {}, consent: false, ans: {}, fin: null };
+  var view = document.getElementById("view");
+
+  function h(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  var LOGO = '<span class="logo"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="8" fill="var(--brand)"/><path d="M6.5 15.5 15 8l8.5 7.5" fill="none" stroke="var(--brand-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 14.5V22h11v-7.5" fill="none" stroke="var(--brand-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>StayBook</span>';
+
+  function bookingCard() {
+    return '<div class="card booking" aria-label="ข้อมูลการจอง">' + LOGO +
+      '<div><div class="name">' + h(BOOKING.name) + '</div><div class="meta">' + h(BOOKING.place) + '</div><div class="meta">' + h(BOOKING.dates) + '</div></div>' +
+      '<div class="paid"><small>ชำระเงินแล้ว</small>' + h(BOOKING.paid) + '</div></div>';
+  }
+
+  function renderBlock(b) {
+    var o = '<div class="block">';
+    if (b.title) o += '<h3>' + h(b.title) + '</h3>';
+    if (b.hl) o += '<p class="hl">' + h(b.hl) + '</p>';
+    if (b.rows) {
+      o += '<dl class="rows">' + b.rows.map(function (r) {
+        return '<div><dt>' + h(r[0]) + '</dt><dd>' + h(r[1]) + '</dd></div>';
+      }).join("") + '</dl>';
+    }
+    if (b.steps) {
+      o += '<ol class="steps">' + b.steps.map(function (s) {
+        var mark = s[0] === "done"
+          ? '<span class="dot" aria-label="เสร็จแล้ว"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+          : '<span class="dot now" aria-label="ขั้นตอนปัจจุบัน"></span>';
+        return '<li>' + mark + '<div><div><span class="t">' + h(s[1]) + '</span><span class="d">— ' + h(s[2]) + '</span></div>' +
+          (s[3] ? '<div class="desc">' + h(s[3]) + '</div>' : '') +
+          (s[4] ? '<div class="desc">' + h(s[4]) + '</div>' : '') + '</div></li>';
+      }).join("") + '</ol>';
+    }
+    if (b.lines) o += b.lines.map(function (l) {
+      if (l.charAt(0) === "✓") {
+        return '<p class="ln"><svg class="tk" width="18" height="18" viewBox="0 0 14 14" aria-label="เสร็จแล้ว" role="img"><path d="M2.5 7.5 5.5 10.5 11.5 3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>' + h(l.slice(1).trim()) + '</span></p>';
+      }
+      return '<p>' + h(l) + '</p>';
+    }).join("");
+    if (b.text) o += '<p>' + h(b.text) + '</p>';
+    if (b.table) {
+      o += '<div class="tablebox"><table><tbody>' + b.table.map(function (r) {
+        return '<tr><td>' + h(r[0]) + '</td><td>' + h(r[1]) + '</td></tr>';
+      }).join("") + '</tbody></table></div>';
+    }
+    if (b.notes) o += '<ul class="notes">' + b.notes.map(function (n) { return '<li>' + h(n) + '</li>'; }).join("") + '</ul>';
+    return o + '</div>';
+  }
+
+  function radioGroup(name, opts, selected) {
+    return opts.map(function (t, i) {
+      return '<label class="opt"><input type="radio" name="' + name + '" value="' + i + '"' + (selected === i ? " checked" : "") + '><span>' + h(t) + '</span></label>';
+    }).join("");
+  }
+
+  function progress(n) {
+    var bars = "";
+    for (var i = 1; i <= 4; i++) bars += '<i class="' + (i <= n ? "on" : "") + '"></i>';
+    return '<div class="progress" role="img" aria-label="ขั้นตอนที่ ' + n + ' จาก 4"><div class="bars">' + bars + '</div><span>ขั้นตอนที่ ' + n + ' จาก 4</span></div>';
+  }
+
+  /* ---------- screens ---------- */
+  function landing() {
+    var bg = BG.map(function (b, qi) {
+      return '<fieldset class="opts" id="bg-' + b.key + '"><legend class="small" style="font-weight:600;margin-bottom:8px;padding:0">' + (qi + 1) + '. ' + h(b.q) + '</legend>' +
+        radioGroup("bg-" + b.key, b.opts, state.bg[b.key]) + '</fieldset>';
+    }).join("");
+    return '' +
+      '<div class="card"><h1>การศึกษาการอ่านข้อมูลการคืนเงินค่าที่พัก</h1>' +
+      '<p>การศึกษานี้ต้องการเข้าใจว่าผู้คนอ่านและทำความเข้าใจข้อมูลการคืนเงินอย่างไร ในสถานการณ์จำลองบนแพลตฟอร์มจองที่พักสมมติชื่อ StayBook</p></div>' +
+
+      '<div class="card"><h2>คำชี้แจง</h2><ul class="list">' +
+      '<li>คุณจะดูข้อมูลการคืนเงิน 4 ขั้นตอน และตอบคำถามสั้น ๆ ขั้นตอนละ 1 ข้อ</li>' +
+      '<li>เหตุการณ์ทั้งหมดเป็นเรื่องสมมติ ไม่มีการจอง การยกเลิก หรือการคืนเงินจริง</li>' +
+      '<li>การเข้าร่วมเป็นไปโดยสมัครใจ และคุณหยุดเข้าร่วมได้ทุกเมื่อ</li>' +
+      '<li>ใช้เวลาประมาณ 4–6 นาที</li>' +
+      '<li>นี่ไม่ใช่ข้อสอบ ไม่มีคำตอบที่ถูกหรือผิด</li>' +
+      '<li>อ่านข้อมูลในแต่ละหน้าอย่างตั้งใจ</li>' +
+      '<li>ตอบตามข้อมูลที่เห็นและความเข้าใจของคุณเอง</li>' +
+      '<li>หากไม่แน่ใจ ให้เลือกคำตอบที่ใกล้เคียงกับความเข้าใจของคุณที่สุด</li>' +
+      '<li>ไม่ต้องรีบ ใช้เวลาตามสบาย</li>' +
+      '<li>ไม่ต้องค้นหาข้อมูลจากที่อื่น ใช้เฉพาะข้อมูลที่แสดงในเว็บไซต์นี้</li>' +
+      '<li>ทำให้เสร็จในครั้งเดียว และไม่ควรรีเฟรชหรือปิดหน้านี้ระหว่างทำ</li></ul></div>' +
+
+      '<div class="card"><h2>ข้อมูลพื้นฐานของคุณ</h2><p class="muted small">ตอบ 3 ข้อสั้น ๆ เราไม่เก็บชื่อ อีเมล หรือเบอร์โทร</p>' + bg + '</div>' +
+
+      '<div class="card"><h2>การยินยอมเข้าร่วมและการเก็บข้อมูล</h2>' +
+      '<div class="consent-box"><p>ข้อมูลที่รวบรวมจากการศึกษานี้อาจประกอบด้วยคำตอบของคุณ ระยะเวลาที่ใช้ตอบคำถามในแต่ละขั้นตอน และข้อมูลพื้นฐานที่คุณเลือกให้ โดยข้อมูลจะถูกนำไปใช้เพื่อวิเคราะห์ผลการศึกษาและจัดทำโครงงานวิชาการตามวัตถุประสงค์ที่ได้แจ้งไว้ การจัดเก็บ การเข้าถึง การเก็บรักษา และการนำเสนอข้อมูลจะเป็นไปตามแนวทางที่ผู้วิจัยกำหนดและข้อกำหนดที่เกี่ยวข้อง</p></div>' +
+      '<label class="check" for="consent"><input type="checkbox" id="consent"' + (state.consent ? " checked" : "") + '><span>ฉันได้อ่านและเข้าใจคำชี้แจงข้างต้นแล้ว และยินยอมเข้าร่วมการศึกษา รวมถึงอนุญาตให้เก็บและใช้ข้อมูลที่เกิดจากการเข้าร่วมของฉันตามวัตถุประสงค์ที่ระบุไว้</span></label>' +
+      '<div id="bgerr" class="err" role="alert" hidden>กรุณาตอบข้อมูลพื้นฐานให้ครบทั้ง 3 ข้อก่อนเริ่ม</div>' +
+      '<div class="btns"><button type="button" class="btn" id="start"' + (state.consent ? "" : " disabled") + '>เริ่มการทดลอง</button>' +
+      '<button type="button" class="txtbtn" id="decline">ไม่ประสงค์เข้าร่วม</button></div></div>';
+  }
+
+  function scenario() {
+    return '<div class="card"><h1>สถานการณ์ของคุณ</h1>' +
+      '<p>ลองนึกภาพว่าคุณจองบ้านพักที่เชียงใหม่ผ่านแอป StayBook ไปเมื่อ 1 เดือนที่แล้ว แต่วันนี้วันที่ 5 พ.ย. 2569 คุณมีงานด่วนจึงต้องยกเลิกการจองที่พัก</p>' +
+      '<p>ต่อไปนี้คือหน้าจอที่คุณจะเห็นในแต่ละขั้นตอน ดูได้ตามสบาย แล้วตอบตามที่คุณเห็นและรู้สึกจริง ไม่ใช่ข้อสอบ</p></div>' +
+      bookingCard() +
+      '<div class="btns"><button type="button" class="btn" id="next">ไปที่ขั้นตอนที่ 1</button></div>';
+  }
+
+  function stage(id) {
+    var st = STAGES[id];
+    var sel = state.ans[id];
+    return progress(st.no) +
+      '<div class="scn"><h2>สถานการณ์จำลอง</h2><p class="ctx">' + h(st.ctx) + '</p></div>' +
+      bookingCard() +
+      '<section class="card panel" aria-label="' + h(st.heading) + '"><h2>' + h(st.heading) + '</h2>' + st.L[state.level].map(renderBlock).join("") + '</section>' +
+      '<section class="card qcard"><div class="qlabel">คำถาม</div><h2 class="q">' + h(st.q) + '</h2>' +
+      '<fieldset class="opts" aria-label="ตัวเลือกคำตอบ">' + radioGroup("ans", st.opts, sel) + '</fieldset>' +
+      '<div class="btns"><button type="button" class="btn" id="submit"' + (sel == null ? " disabled" : "") + '>' + (id === "s4" ? "ส่งคำตอบ" : "ส่งคำตอบและไปต่อ") + '</button></div></section>';
+  }
+
+  function finalQ() {
+    var sc = [1, 2, 3, 4, 5].map(function (n) {
+      return '<label class="sc-opt"><input type="radio" name="fin" value="' + (n - 1) + '"' + (state.fin === n - 1 ? " checked" : "") + '><span>' + n + '</span></label>';
+    }).join("");
+    return '<div class="card"><h1>คำถามสุดท้าย</h1><fieldset class="opts fq"><legend>' + h(FINAL.q) + '</legend>' +
+      '<div class="scale">' + sc + '</div>' +
+      '<div class="scale-ends"><span>1 = น้อยเกินไป</span><span>3 = พอดี</span><span>5 = มากเกินไป</span></div></fieldset>' +
+      '<div class="btns"><button type="button" class="btn" id="finish"' + (state.fin == null ? " disabled" : "") + '>ส่งคำตอบ</button></div></div>';
+  }
+
+  function thanks() {
+    return '<div class="card"><h1>ขอบคุณที่เข้าร่วม</h1><p>คุณผ่านครบทั้ง 4 ขั้นตอนแล้ว เหตุการณ์ทั้งหมดในการศึกษานี้เป็นเรื่องสมมติ ไม่มีการจอง การยกเลิก หรือการคืนเงินจริงเกิดขึ้น</p><p class="muted">คุณปิดหน้านี้ได้เลย</p></div>';
+  }
+
+  function declined() {
+    return '<div class="card"><h1>ขอบคุณที่สละเวลาพิจารณา</h1><p>คุณเลือกที่จะไม่เข้าร่วมการศึกษานี้ และยังไม่ได้เริ่มการทดลอง คุณปิดหน้านี้ได้เลย</p>' +
+      '<div class="btns"><button type="button" class="btn ghost" id="back">กลับไปอ่านรายละเอียดอีกครั้ง</button></div></div>';
+  }
+
+  /* ---------- wiring ---------- */
+  function go(s) {
+    state.screen = s;
+    render();
+    window.scrollTo(0, 0);
+    try { view.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  function render() {
+    var s = state.screen;
+    var html = s === "landing" ? landing() : s === "scenario" ? scenario() : STAGES[s] ? stage(s) : s === "final" ? finalQ() : s === "thanks" ? thanks() : declined();
+    view.innerHTML = '<div style="display:grid;gap:16px">' + html + '</div>';
+    document.getElementById("jump").value = s;
+    Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.level === state.level));
+    });
+    bind();
+  }
+
+  function on(id, ev, fn) { var el = document.getElementById(id); if (el) el.addEventListener(ev, fn); }
+
+  function bind() {
+    var s = state.screen;
+    if (s === "landing") {
+      BG.forEach(function (b) {
+        Array.prototype.forEach.call(document.querySelectorAll('input[name="bg-' + b.key + '"]'), function (r) {
+          r.addEventListener("change", function () { state.bg[b.key] = Number(r.value); document.getElementById("bgerr").hidden = true; });
+        });
+      });
+      on("consent", "change", function (e) { state.consent = e.target.checked; document.getElementById("start").disabled = !state.consent; });
+      on("start", "click", function () {
+        var missing = BG.filter(function (b) { return state.bg[b.key] == null; });
+        if (missing.length) {
+          var e = document.getElementById("bgerr"); e.hidden = false;
+          document.getElementById("bg-" + missing[0].key).scrollIntoView({ block: "center" });
+          return;
+        }
+        go("scenario");
+      });
+      on("decline", "click", function () { go("declined"); });
+    } else if (s === "scenario") {
+      on("next", "click", function () { go("s1"); });
+    } else if (STAGES[s]) {
+      Array.prototype.forEach.call(document.querySelectorAll('input[name="ans"]'), function (r) {
+        r.addEventListener("change", function () { state.ans[s] = Number(r.value); document.getElementById("submit").disabled = false; });
+      });
+      on("submit", "click", function () { go(s === "s4" ? "final" : "s" + (STAGES[s].no + 1)); });
+    } else if (s === "final") {
+      Array.prototype.forEach.call(document.querySelectorAll('input[name="fin"]'), function (r) {
+        r.addEventListener("change", function () { state.fin = Number(r.value); document.getElementById("finish").disabled = false; });
+      });
+      on("finish", "click", function () { go("thanks"); });
+    } else if (s === "declined") {
+      on("back", "click", function () { go("landing"); });
+    }
+  }
+
+  /* researcher bar */
+  var jump = document.getElementById("jump");
+  jump.innerHTML = SCREENS.map(function (x) { return '<option value="' + x[0] + '">' + h(x[1]) + '</option>'; }).join("");
+  jump.addEventListener("change", function () { go(jump.value); });
+  Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
+    b.addEventListener("click", function () { state.level = b.dataset.level; render(); });
+  });
+  document.getElementById("hideBar").addEventListener("click", function () { document.getElementById("rbar").hidden = true; });
+
+  render();
+})();
+</script>
