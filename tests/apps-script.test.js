@@ -1,44 +1,6 @@
 // Run: node tests/apps-script.test.js   (tests apps-script/Code.gs against an in-memory mock of Sheets)
-// Minimal in-memory mock of the Apps Script services used by Code.gs
-const fs = require("fs"), vm = require("vm");
-function makeSheet(name) {
-  const rows = [];
-  const sh = {
-    name, rows,
-    getLastRow: () => rows.length,
-    appendRow: (r) => rows.push(r.slice()),
-    setFrozenRows() {},
-    getRange(a, b, c, d) {
-      let r0, c0, nr, nc;
-      if (typeof a === "string") { r0 = 1; c0 = 1; nr = Math.max(rows.length, 1); nc = 1; }
-      else { r0 = a; c0 = b; nr = c || 1; nc = d || 1; }
-      const rng = {
-        getValue: () => (rows[r0 - 1] || [])[c0 - 1] ?? "",
-        getValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => (rows[r0 - 1 + i] || [])[c0 - 1 + j] ?? "")),
-        setValue: (v) => { while (rows.length < r0) rows.push([]); rows[r0 - 1][c0 - 1] = v; return rng; },
-        setValues: (vs) => { vs.forEach((row, i) => row.forEach((v, j) => { while (rows.length < r0 + i) rows.push([]); rows[r0 - 1 + i][c0 - 1 + j] = v; })); return rng; },
-        setFontWeight: () => rng,
-        createTextFinder: (t) => { let whole = false; const tf = {
-          matchEntireCell: (x) => { whole = x; return tf; },
-          findAll: () => { const out = []; for (let i = 0; i < nr; i++) { const v = String((rows[r0 - 1 + i] || [])[c0 - 1] ?? ""); if (whole ? v === t : v.includes(t)) out.push({ getRow: () => r0 + i }); } return out; },
-          findNext: () => tf.findAll()[0] || null }; return tf; }
-      };
-      return rng;
-    }
-  };
-  return sh;
-}
-const sheets = {};
-const ss = { getSheetByName: (n) => sheets[n] || null, insertSheet: (n) => (sheets[n] = makeSheet(n)) };
-const ctx = {
-  console, Logger: { log: () => {} },
-  SpreadsheetApp: { getActiveSpreadsheet: () => ss },
-  LockService: { getScriptLock: () => ({ tryLock: () => true, waitLock() {}, releaseLock() {} }) },
-  ContentService: { MimeType: { JSON: "json" }, createTextOutput: (s) => ({ s, setMimeType() { return this; } }) },
-};
-vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(require("path").join(__dirname, "../apps-script/Code.gs"), "utf8"), ctx);
-const post = (o) => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(o) } }).s);
+const { loadCodeGs } = require("./gs-mock");
+const { ctx, sheets, post, postRaw } = loadCodeGs();
 let fails = 0;
 const eq = (label, got, want) => { const ok = JSON.stringify(got) === JSON.stringify(want); if (!ok) fails++; console.log((ok ? "PASS " : "FAIL ") + label + (ok ? "" : " got=" + JSON.stringify(got) + " want=" + JSON.stringify(want))); };
 
@@ -54,7 +16,7 @@ const tid = "aaaaaaaa-0000-4000-8000-000000000000";
 eq("test counter separate", post({ action: "start", participant_id: tid, is_test: true }).level, "L1");
 eq("real counter unchanged", sheets.Config.rows[1][1], 5);
 eq("bad id", post({ action: "start", participant_id: "=HYPERLINK()" }).error, "bad_participant_id");
-eq("bad json", JSON.parse(ctx.doPost({ postData: { contents: "{" } }).s).error, "bad_json");
+eq("bad json", postRaw("{").error, "bad_json");
 eq("bad action", post({ action: "nope" }).error, "bad_action");
 eq("profile", post({ action: "profile", participant_id: ids[0], age: 1, booked: 0, exp: 2 }).ok, true);
 eq("profile row", sheets.Participants.rows[1].slice(3, 6), ["25–34 ปี", "เคย", "ไม่เคยยกเลิกการจองที่พัก"]);

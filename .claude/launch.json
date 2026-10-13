@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "local", "runtimeExecutable": "node", "runtimeArgs": ["tests/local-server.js"], "port": 8000 }
+  ]
+}

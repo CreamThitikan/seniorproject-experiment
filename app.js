@@ -1,0 +1,349 @@
+(function () {
+  "use strict";
+
+  var BOOKING = { name: "Doi View Villa", place: "เชียงใหม่", dates: "14–16 พ.ย. 2569 (2 คืน)", paid: "฿6,000" };
+
+  var POLICY = [["ยกเลิกก่อนเช็คอิน มากกว่าหรือเท่ากับ 14 วัน", "คืนเงินเต็มจำนวน"], ["ยกเลิกก่อนเช็คอิน 7-13 วัน", "คืนเงิน 50%"], ["ยกเลิกก่อนเช็คอินน้อยกว่า 7 วัน", "ไม่คืนเงิน"]];
+
+  var NOTES4 = ["*ระยะเวลาที่ได้รับจริงอาจแตกต่างกันตามแต่ละธนาคารและช่องทางการรับเงิน", "*หากยังไม่พบเงินคืนหลังวันที่ 20 พ.ย. สามารถติดต่อ StayBook โทร.081-xxx-xxxx"];
+  var TXT4 = "เงินคืนถูกส่งให้ธนาคารแล้ว และธนาคารต้องใช้เวลาในการประมวลผลก่อนเงินจะแสดงในบัญชีของคุณ";
+
+  var STAGES = {
+    s1: {
+      no: 1, heading: "ยกเลิกการจอง",
+      ctx: "คุณเปิดหน้ายกเลิกเพื่อดูว่ายกเลิกแล้วจะได้เงินคืนเท่าไร",
+      q: "ทำไมคุณถึงได้เงินคืนแค่บางส่วน?",
+      opts: ["เกิดเหตุร้ายแรง", "ยกเลิกก่อนเช็คอิน 9 วัน", "จ่ายด้วยบัตรเครดิต", "ในหน้านี้ไม่ได้ระบุ"],
+      L: {
+        L1: [{ title: "เงื่อนไขการขอคืนเงินหากยกเลิกตอนนี้", rows: [["ประเภทเงินคืน", "คืนบางส่วน"], ["จำนวนเงินคืน", "฿3,000"], ["ช่องทางการรับเงิน", "บัตรเครดิต ••4821"]] }],
+        L2: [
+          { title: "เงื่อนไขการขอคืนเงินหากยกเลิกตอนนี้", rows: [["ประเภทเงินคืน", "คืนบางส่วน"], ["จำนวนเงินคืน", "฿3,000"], ["เหตุผล", "ยกเลิกก่อนเช็คอิน 9 วัน"], ["ช่องทางการรับเงิน", "บัตรเครดิต ••4821"]] },
+          { title: "นโยบายการคืนเงิน", table: POLICY }
+        ],
+        L3: [
+          { title: "เงื่อนไขการขอคืนเงินหากยกเลิกตอนนี้", rows: [["ประเภทเงินคืน", "คืนบางส่วน (ประเภทเงินคืนทั้งหมด: คืนเงินเต็มจำนวน, คืนเงินบางส่วน, ไม่คืนเงิน)"], ["จำนวนเงินคืน", "฿3,000"], ["เหตุผล", "ยกเลิกก่อนเช็คอิน 9 วัน"], ["คืนเงินไปที่", "บัตรเครดิต ••4821 (ช่องทางที่ท่านใช้ในการชำระเงิน)"]] },
+          { title: "นโยบายการคืนเงิน", table: POLICY },
+          { title: "นโยบายการคืนเงินเมื่อเกิดเหตุการณ์ร้ายแรง", text: "หากเกิดเหตุการณ์ร้ายแรงที่อยู่นอกเหนือการควบคุม เช่น ภัยธรรมชาติหรือข้อจำกัดการเดินทางจากหน่วยงานรัฐ ซึ่งทำให้ไม่สามารถเข้าพักได้ อาจมีสิทธิ์ได้รับข้อยกเว้นจากนโยบายการยกเลิกปกติ โดย StayBook จะพิจารณาตามเงื่อนไขของเหตุการณ์" }
+        ]
+      }
+    },
+    s2: {
+      no: 2, heading: "ผลการยกเลิกและคำขอคืนเงิน",
+      ctx: "หลังจากคุณกดยกเลิกการจองและขอเงินคืน คุณตรวจสอบว่าคำขอคืนเงินได้รับการอนุมัติหรือไม่",
+      q: "StayBook ทำอะไรเพื่อยืนยันว่าการจองยกเลิกแล้ว?",
+      opts: ["โทรแจ้ง", "แจ้งเจ้าของที่พัก", "ส่งอีเมลยืนยัน", "ในหน้านี้ไม่ได้ระบุ"],
+      L: {
+        L1: [{ rows: [["การจอง", "ยกเลิกแล้ว"], ["สถานะ", "คำขออนุมัติแล้ว"]] }],
+        L2: [{ rows: [["การจอง", "ยกเลิกแล้ว"], ["สถานะ", "คำขออนุมัติแล้ว"]], lines: ["อนุมัติตามนโยบายการคืนเงิน", "✓ ส่งอีเมลยืนยันแล้ว"] }],
+        L3: [{ rows: [["การจอง", "ยกเลิกแล้ว"], ["", "กู้คืนการจองไม่ได้"], ["สถานะ", "คำขออนุมัติแล้ว"]], lines: ["อนุมัติตามนโยบายการคืนเงิน", "ตัดสินโดยระบบอัตโนมัติ ไม่ต้องรอเจ้าของที่พัก", "✓ ส่งอีเมลยืนยันยกเลิกการจองแล้ว", "✓ แจ้งเจ้าของที่พักแล้ว"] }]
+      }
+    },
+    s3: {
+      no: 3, heading: "การคืนเงินของคุณ",
+      ctx: "4 วันต่อมา วันนี้เป็นวันที่ 9 พ.ย. 2569 คุณเข้ามาเช็คสถานะการคืนเงิน",
+      q: "ทำไมเงินของคุณถึงยังไม่เข้าบัตร?",
+      opts: ["StayBook ยังตรวจสอบคำขออยู่", "StayBook ส่งเงินแล้ว ตอนนี้รอธนาคารดำเนินการ", "รอเจ้าของที่พักดำเนินการ", "ในหน้านี้ไม่ได้ระบุ"],
+      L: {
+        L1: [{ rows: [["อัปเดตล่าสุด", "9 พ.ย."], ["จำนวนเงินคืน", "฿3,000"], ["ช่องทางรับเงินคืน", "บัตรเครดิต ••4821"], ["สถานะการคืนเงิน", "กำลังดำเนินการ"]] }],
+        L2: [{ rows: [["อัปเดตล่าสุด", "9 พ.ย."], ["จำนวนเงินคืน", "฿3,000"], ["ช่องทางรับเงินคืน", "บัตรเครดิต ••4821"], ["สถานะการคืนเงิน", "กำลังดำเนินการ"]],
+          steps: [["done", "อนุมัติการคืนเงิน", "5 พ.ย.", "คำขอคืนเงินได้รับการอนุมัติตามเงื่อนไขการยกเลิกของการจอง"], ["done", "ส่งรายการคืนเงินให้ธนาคาร", "6 พ.ย.", "StayBook ส่งรายการคืนเงินไปยังธนาคารผู้ออกบัตรตามช่องทางการชำระเงินเดิม"], ["now", "ธนาคารกำลังดำเนินการ", "ปัจจุบัน", "ธนาคารกำลังตรวจสอบและประมวลผลรายการคืนเงินก่อนส่งยอดเงินคืนไปยังบัญชีบัตรของคุณ"]] }],
+        L3: [{ rows: [["อัปเดตล่าสุด", "9 พ.ย."], ["จำนวนเงินคืน", "฿3,000"], ["ช่องทางรับเงินคืน", "บัตรเครดิต ••4821"], ["สถานะการคืนเงิน", "กำลังดำเนินการ"]],
+          steps: [["done", "อนุมัติการคืนเงิน", "5 พ.ย.", "คำขอคืนเงินได้รับการอนุมัติตามเงื่อนไขการยกเลิกของการจอง", "* หากการจองต้องให้เจ้าของที่พักยืนยัน หรือเป็นคำขอคืนเงินนอกเหนือจากนโยบาย คำขอจะถูกส่งให้ทีมงาน StayBook ตรวจสอบเพิ่มเติมก่อนอนุมัติ"], ["done", "ส่งรายการคืนเงินให้ธนาคาร", "6 พ.ย.", "StayBook ส่งรายการคืนเงินไปยังธนาคารผู้ออกบัตรตามช่องทางการชำระเงินเดิม", "* หากบัตรที่ใช้ชำระเงินถูกยกเลิกหรือหมดอายุแล้ว ธนาคารผู้ออกบัตรจะเป็นผู้นำยอดเงินคืนเข้าบัญชีที่ผูกกับบัตรนั้น"], ["now", "ธนาคารกำลังดำเนินการ", "ปัจจุบัน", "ธนาคารกำลังตรวจสอบและประมวลผลรายการคืนเงินก่อนส่งยอดเงินคืนไปยังบัญชีบัตรของคุณ", "* หากชำระด้วยบัตรที่ออกโดยธนาคารต่างประเทศ ธนาคารผู้ออกบัตรอาจต้องตรวจสอบรายการเพิ่มเติมก่อนนำยอดเงินคืนเข้าบัญชีบัตร"]],
+          notes: ["*หลังจากส่งข้อมูลให้ธนาคารแล้วการประมวลผลขึ้นอยู่กับธนาคาร", "*การแสดงสถานะหรือรายละเอียดรายการอาจแตกต่างกันตามธนาคาร"] }]
+      }
+    },
+    s4: {
+      no: 4, heading: "รายละเอียดการคืนเงิน",
+      ctx: "คุณกดเข้าอีกหน้าหนึ่ง เพื่อดูว่าคุณจะได้รับเงินคืนเมื่อไร",
+      q: "หากเกินวันที่ 20 พ.ย. แล้วเงินยังไม่เข้าบัญชีของคุณ คุณควรทำอย่างไรต่อ?",
+      opts: ["โทรติดต่อ StayBook", "ยื่นคำขอคืนเงินใหม่", "ติดต่อเจ้าของที่พัก", "ในหน้านี้ไม่ได้ระบุ"],
+      L: {
+        L1: [{ rows: [["จำนวนเงินคืน", "฿3,000"], ["คืนเงินไปที่", "บัตรเครดิต ••4821"]] }, { title: "ระยะเวลาการคืนเงิน", hl: "คาดว่าจะได้รับเงินคืนภายใน 20 พ.ย." }],
+        L2: [{ rows: [["จำนวนเงินคืน", "฿3,000"], ["คืนเงินไปที่", "บัตรเครดิต ••4821"]] }, { title: "ระยะเวลาการคืนเงิน", hl: "คาดว่าจะได้รับเงินคืนภายใน 20 พ.ย.", text: TXT4, notes: NOTES4 }],
+        L3: [{ rows: [["จำนวนเงินคืน", "฿3,000"], ["คืนเงินไปที่", "บัตรเครดิต ••4821"]] }, { title: "ระยะเวลาการคืนเงิน", hl: "คาดว่าจะได้รับเงินคืนภายใน 20 พ.ย.", text: TXT4, notes: NOTES4 },
+          { title: "ระยะเวลาคืนเงินแต่ละกรณี", text: "ระยะเวลาที่เงินคืนแสดงในบัญชีอาจแตกต่างกันตามช่องทางการชำระเงิน",
+            rows: [["บัตรเดบิต", "เงินคืนอาจใช้เวลาหลายวันทำการกว่าจะแสดงในบัญชี"], ["การโอนเงินผ่านธนาคาร", "เงินคืนอาจใช้เวลาหลายวันทำการในการประมวลผล"], ["กระเป๋าเงินดิจิทัล", "เงินคืนอาจแสดงในบัญชีเร็วกว่าการคืนเงินผ่านบัตรในบางกรณี"], ["การชำระเงินผ่านผู้ให้บริการภายนอก", "ระยะเวลาการคืนเงินอาจขึ้นอยู่กับผู้ให้บริการที่ทำรายการชำระเงิน"], ["การจองที่พักที่เป็นผู้ดำเนินการชำระเงิน", "ระยะเวลาการคืนเงินอาจแตกต่างจากการชำระเงินที่ดำเนินการโดยแพลตฟอร์ม"], ["การคืนเงินหลายรายการ", "เงินคืนแต่ละรายการอาจแสดงในบัญชีในเวลาที่แตกต่างกัน"]] }]
+      }
+    }
+  };
+
+  var BG = [
+    { key: "age", q: "ช่วงอายุของคุณ", opts: ["18–24 ปี", "25–34 ปี", "35 ปีขึ้นไป", "ไม่ประสงค์ระบุ"] },
+    { key: "booked", q: "คุณเคยจองที่พักผ่านแพลตฟอร์มจองที่พักออนไลน์หรือไม่", opts: ["เคย", "ไม่เคย"] },
+    { key: "exp", q: "ข้อใดตรงกับประสบการณ์เรื่องการยกเลิกที่พักและการรอเงินคืนของคุณมากที่สุด", opts: ["เคยยกเลิกการจองที่พัก และเคยรอรับเงินคืน", "เคยยกเลิกการจองที่พัก แต่ไม่เคยรอรับเงินคืน", "ไม่เคยยกเลิกการจองที่พัก"] }
+  ];
+
+  var FINAL = { q: "จากข้อมูลการคืนเงินที่คุณเห็นตลอดการทดลอง คุณคิดว่าปริมาณข้อมูลอยู่ในระดับใด (เลือก 1–5)" };
+
+  var SCREENS = [
+    ["landing", "หน้าแรก"], ["scenario", "แนะนำสถานการณ์"], ["s1", "Stage 1 สิทธิ์การขอคืนเงิน"], ["s2", "Stage 2 ผลคำขอ"],
+    ["s3", "Stage 3 สถานะ"], ["s4", "Stage 4 ระยะเวลา"], ["final", "คำถามสุดท้าย"], ["thanks", "หน้าขอบคุณ"], ["declined", "หน้าไม่ประสงค์เข้าร่วม"]
+  ];
+
+  var LEVELS = ["L1", "L2", "L3"];
+  var IS_TEST = false;
+  var REQUEST_TIMEOUT_MS = 15000;
+
+  // level stays null until the server assigns one; pendingId is reused on retry so a lost
+  // "start" response can never assign the same participant twice.
+  var state = { level: null, screen: "landing", bg: {}, consent: false, ans: {}, fin: null, pid: null, pendingId: null, starting: false };
+  var view = document.getElementById("view");
+
+  /* ---------- server ---------- */
+  // text/plain keeps this a "simple" CORS request, so the browser sends no preflight (Apps Script cannot answer one).
+  function post(action, payload) {
+    if (!window.APPS_SCRIPT_URL) return Promise.reject(new Error("APPS_SCRIPT_URL is not set in config.js"));
+    var data = { action: action };
+    for (var k in payload) data[k] = payload[k];
+    var ctl = typeof AbortController === "function" ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctl) ctl.abort(); }, REQUEST_TIMEOUT_MS);
+    return fetch(window.APPS_SCRIPT_URL, {
+      method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(data),
+      credentials: "omit", redirect: "follow", signal: ctl ? ctl.signal : undefined
+    }).then(function (r) {
+      clearTimeout(timer);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }, function (e) { clearTimeout(timer); throw e; });
+  }
+
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    var b = new Uint8Array(16);
+    crypto.getRandomValues(b);
+    b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+    var x = Array.prototype.map.call(b, function (n) { return (n + 256).toString(16).slice(1); }).join("");
+    return x.slice(0, 8) + "-" + x.slice(8, 12) + "-" + x.slice(12, 16) + "-" + x.slice(16, 20) + "-" + x.slice(20);
+  }
+
+  function beginExperiment() {
+    if (state.starting || state.pid) return;
+    state.starting = true;
+    if (!state.pendingId) state.pendingId = uuid();
+    var startBtn = document.getElementById("start"), retryBtn = document.getElementById("retry");
+    startBtn.disabled = true;
+    retryBtn.disabled = true;
+    document.getElementById("starterr").hidden = true;
+    post("start", { participant_id: state.pendingId, is_test: IS_TEST }).then(function (res) {
+      if (!res || !res.ok || LEVELS.indexOf(res.level) < 0) throw new Error("start rejected: " + JSON.stringify(res));
+      state.starting = false;
+      state.pid = res.participant_id;
+      state.level = res.level;
+      go("scenario");
+    }).catch(function (e) {
+      state.starting = false;
+      if (state.screen !== "landing") return;
+      if (window.console) console.warn(e);
+      document.getElementById("starterr").hidden = false;
+      startBtn.hidden = true;
+      retryBtn.hidden = false;
+      retryBtn.disabled = false;
+    });
+  }
+
+  function h(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  var LOGO = '<span class="logo"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="8" fill="var(--brand)"/><path d="M6.5 15.5 15 8l8.5 7.5" fill="none" stroke="var(--brand-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 14.5V22h11v-7.5" fill="none" stroke="var(--brand-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>StayBook</span>';
+
+  function bookingCard() {
+    return '<div class="card booking" aria-label="ข้อมูลการจอง">' + LOGO +
+      '<div><div class="name">' + h(BOOKING.name) + '</div><div class="meta">' + h(BOOKING.place) + '</div><div class="meta">' + h(BOOKING.dates) + '</div></div>' +
+      '<div class="paid"><small>ชำระเงินแล้ว</small>' + h(BOOKING.paid) + '</div></div>';
+  }
+
+  function renderBlock(b) {
+    var o = '<div class="block">';
+    if (b.title) o += '<h3>' + h(b.title) + '</h3>';
+    if (b.hl) o += '<p class="hl">' + h(b.hl) + '</p>';
+    if (b.rows) {
+      o += '<dl class="rows">' + b.rows.map(function (r) {
+        return '<div><dt>' + h(r[0]) + '</dt><dd>' + h(r[1]) + '</dd></div>';
+      }).join("") + '</dl>';
+    }
+    if (b.steps) {
+      o += '<ol class="steps">' + b.steps.map(function (s) {
+        var mark = s[0] === "done"
+          ? '<span class="dot" aria-label="เสร็จแล้ว"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+          : '<span class="dot now" aria-label="ขั้นตอนปัจจุบัน"></span>';
+        return '<li>' + mark + '<div><div><span class="t">' + h(s[1]) + '</span><span class="d">— ' + h(s[2]) + '</span></div>' +
+          (s[3] ? '<div class="desc">' + h(s[3]) + '</div>' : '') +
+          (s[4] ? '<div class="desc">' + h(s[4]) + '</div>' : '') + '</div></li>';
+      }).join("") + '</ol>';
+    }
+    if (b.lines) o += b.lines.map(function (l) {
+      if (l.charAt(0) === "✓") {
+        return '<p class="ln"><svg class="tk" width="18" height="18" viewBox="0 0 14 14" aria-label="เสร็จแล้ว" role="img"><path d="M2.5 7.5 5.5 10.5 11.5 3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>' + h(l.slice(1).trim()) + '</span></p>';
+      }
+      return '<p>' + h(l) + '</p>';
+    }).join("");
+    if (b.text) o += '<p>' + h(b.text) + '</p>';
+    if (b.table) {
+      o += '<div class="tablebox"><table><tbody>' + b.table.map(function (r) {
+        return '<tr><td>' + h(r[0]) + '</td><td>' + h(r[1]) + '</td></tr>';
+      }).join("") + '</tbody></table></div>';
+    }
+    if (b.notes) o += '<ul class="notes">' + b.notes.map(function (n) { return '<li>' + h(n) + '</li>'; }).join("") + '</ul>';
+    return o + '</div>';
+  }
+
+  function radioGroup(name, opts, selected) {
+    return opts.map(function (t, i) {
+      return '<label class="opt"><input type="radio" name="' + name + '" value="' + i + '"' + (selected === i ? " checked" : "") + '><span>' + h(t) + '</span></label>';
+    }).join("");
+  }
+
+  function progress(n) {
+    var bars = "";
+    for (var i = 1; i <= 4; i++) bars += '<i class="' + (i <= n ? "on" : "") + '"></i>';
+    return '<div class="progress" role="img" aria-label="ขั้นตอนที่ ' + n + ' จาก 4"><div class="bars">' + bars + '</div><span>ขั้นตอนที่ ' + n + ' จาก 4</span></div>';
+  }
+
+  /* ---------- screens ---------- */
+  function landing() {
+    var bg = BG.map(function (b, qi) {
+      return '<fieldset class="opts" id="bg-' + b.key + '"><legend class="small" style="font-weight:600;margin-bottom:8px;padding:0">' + (qi + 1) + '. ' + h(b.q) + '</legend>' +
+        radioGroup("bg-" + b.key, b.opts, state.bg[b.key]) + '</fieldset>';
+    }).join("");
+    return '' +
+      '<div class="card"><h1>การศึกษาการอ่านข้อมูลการคืนเงินค่าที่พัก</h1>' +
+      '<p>การศึกษานี้ต้องการเข้าใจว่าผู้คนอ่านและทำความเข้าใจข้อมูลการคืนเงินอย่างไร ในสถานการณ์จำลองบนแพลตฟอร์มจองที่พักสมมติชื่อ StayBook</p></div>' +
+
+      '<div class="card"><h2>คำชี้แจง</h2><ul class="list">' +
+      '<li>คุณจะดูข้อมูลการคืนเงิน 4 ขั้นตอน และตอบคำถามสั้น ๆ ขั้นตอนละ 1 ข้อ</li>' +
+      '<li>เหตุการณ์ทั้งหมดเป็นเรื่องสมมติ ไม่มีการจอง การยกเลิก หรือการคืนเงินจริง</li>' +
+      '<li>การเข้าร่วมเป็นไปโดยสมัครใจ และคุณหยุดเข้าร่วมได้ทุกเมื่อ</li>' +
+      '<li>ใช้เวลาประมาณ 4–6 นาที</li>' +
+      '<li>นี่ไม่ใช่ข้อสอบ ไม่มีคำตอบที่ถูกหรือผิด</li>' +
+      '<li>อ่านข้อมูลในแต่ละหน้าอย่างตั้งใจ</li>' +
+      '<li>ตอบตามข้อมูลที่เห็นและความเข้าใจของคุณเอง</li>' +
+      '<li>หากไม่แน่ใจ ให้เลือกคำตอบที่ใกล้เคียงกับความเข้าใจของคุณที่สุด</li>' +
+      '<li>ไม่ต้องรีบ ใช้เวลาตามสบาย</li>' +
+      '<li>ไม่ต้องค้นหาข้อมูลจากที่อื่น ใช้เฉพาะข้อมูลที่แสดงในเว็บไซต์นี้</li>' +
+      '<li>ทำให้เสร็จในครั้งเดียว และไม่ควรรีเฟรชหรือปิดหน้านี้ระหว่างทำ</li></ul></div>' +
+
+      '<div class="card"><h2>ข้อมูลพื้นฐานของคุณ</h2><p class="muted small">ตอบ 3 ข้อสั้น ๆ เราไม่เก็บชื่อ อีเมล หรือเบอร์โทร</p>' + bg + '</div>' +
+
+      '<div class="card"><h2>การยินยอมเข้าร่วมและการเก็บข้อมูล</h2>' +
+      '<div class="consent-box"><p>ข้อมูลที่รวบรวมจากการศึกษานี้อาจประกอบด้วยคำตอบของคุณ ระยะเวลาที่ใช้ตอบคำถามในแต่ละขั้นตอน และข้อมูลพื้นฐานที่คุณเลือกให้ โดยข้อมูลจะถูกนำไปใช้เพื่อวิเคราะห์ผลการศึกษาและจัดทำโครงงานวิชาการตามวัตถุประสงค์ที่ได้แจ้งไว้ การจัดเก็บ การเข้าถึง การเก็บรักษา และการนำเสนอข้อมูลจะเป็นไปตามแนวทางที่ผู้วิจัยกำหนดและข้อกำหนดที่เกี่ยวข้อง</p></div>' +
+      '<label class="check" for="consent"><input type="checkbox" id="consent"' + (state.consent ? " checked" : "") + '><span>ฉันได้อ่านและเข้าใจคำชี้แจงข้างต้นแล้ว และยินยอมเข้าร่วมการศึกษา รวมถึงอนุญาตให้เก็บและใช้ข้อมูลที่เกิดจากการเข้าร่วมของฉันตามวัตถุประสงค์ที่ระบุไว้</span></label>' +
+      '<div id="bgerr" class="err" role="alert" hidden>กรุณาตอบข้อมูลพื้นฐานให้ครบทั้ง 3 ข้อก่อนเริ่ม</div>' +
+      '<div id="starterr" class="err" role="alert" hidden>ไม่สามารถเริ่มการทดลองได้ กรุณาลองใหม่อีกครั้ง</div>' +
+      '<div class="btns"><button type="button" class="btn" id="start"' + (state.consent ? "" : " disabled") + '>เริ่มการทดลอง</button>' +
+      '<button type="button" class="btn" id="retry" hidden>ลองใหม่</button>' +
+      '<button type="button" class="txtbtn" id="decline">ไม่ประสงค์เข้าร่วม</button></div></div>';
+  }
+
+  function scenario() {
+    return '<div class="card"><h1>สถานการณ์ของคุณ</h1>' +
+      '<p>ลองนึกภาพว่าคุณจองบ้านพักที่เชียงใหม่ผ่านแอป StayBook ไปเมื่อ 1 เดือนที่แล้ว แต่วันนี้วันที่ 5 พ.ย. 2569 คุณมีงานด่วนจึงต้องยกเลิกการจองที่พัก</p>' +
+      '<p>ต่อไปนี้คือหน้าจอที่คุณจะเห็นในแต่ละขั้นตอน ดูได้ตามสบาย แล้วตอบตามที่คุณเห็นและรู้สึกจริง ไม่ใช่ข้อสอบ</p></div>' +
+      bookingCard() +
+      '<div class="btns"><button type="button" class="btn" id="next">ไปที่ขั้นตอนที่ 1</button></div>';
+  }
+
+  function stage(id) {
+    var st = STAGES[id];
+    var sel = state.ans[id];
+    return progress(st.no) +
+      '<div class="scn"><h2>สถานการณ์จำลอง</h2><p class="ctx">' + h(st.ctx) + '</p></div>' +
+      bookingCard() +
+      '<section class="card panel" aria-label="' + h(st.heading) + '"><h2>' + h(st.heading) + '</h2>' + st.L[state.level].map(renderBlock).join("") + '</section>' +
+      '<section class="card qcard"><div class="qlabel">คำถาม</div><h2 class="q">' + h(st.q) + '</h2>' +
+      '<fieldset class="opts" aria-label="ตัวเลือกคำตอบ">' + radioGroup("ans", st.opts, sel) + '</fieldset>' +
+      '<div class="btns"><button type="button" class="btn" id="submit"' + (sel == null ? " disabled" : "") + '>' + (id === "s4" ? "ส่งคำตอบ" : "ส่งคำตอบและไปต่อ") + '</button></div></section>';
+  }
+
+  function finalQ() {
+    var sc = [1, 2, 3, 4, 5].map(function (n) {
+      return '<label class="sc-opt"><input type="radio" name="fin" value="' + (n - 1) + '"' + (state.fin === n - 1 ? " checked" : "") + '><span>' + n + '</span></label>';
+    }).join("");
+    return '<div class="card"><h1>คำถามสุดท้าย</h1><fieldset class="opts fq"><legend>' + h(FINAL.q) + '</legend>' +
+      '<div class="scale">' + sc + '</div>' +
+      '<div class="scale-ends"><span>1 = น้อยเกินไป</span><span>3 = พอดี</span><span>5 = มากเกินไป</span></div></fieldset>' +
+      '<div class="btns"><button type="button" class="btn" id="finish"' + (state.fin == null ? " disabled" : "") + '>ส่งคำตอบ</button></div></div>';
+  }
+
+  function thanks() {
+    return '<div class="card"><h1>ขอบคุณที่เข้าร่วม</h1><p>คุณผ่านครบทั้ง 4 ขั้นตอนแล้ว เหตุการณ์ทั้งหมดในการศึกษานี้เป็นเรื่องสมมติ ไม่มีการจอง การยกเลิก หรือการคืนเงินจริงเกิดขึ้น</p><p class="muted">คุณปิดหน้านี้ได้เลย</p></div>';
+  }
+
+  function declined() {
+    return '<div class="card"><h1>ขอบคุณที่สละเวลาพิจารณา</h1><p>คุณเลือกที่จะไม่เข้าร่วมการศึกษานี้ และยังไม่ได้เริ่มการทดลอง คุณปิดหน้านี้ได้เลย</p>' +
+      '<div class="btns"><button type="button" class="btn ghost" id="back">กลับไปอ่านรายละเอียดอีกครั้ง</button></div></div>';
+  }
+
+  /* ---------- wiring ---------- */
+  function go(s) {
+    state.screen = s;
+    render();
+    window.scrollTo(0, 0);
+    try { view.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  function render() {
+    var s = state.screen;
+    var html = s === "landing" ? landing() : s === "scenario" ? scenario() : STAGES[s] ? stage(s) : s === "final" ? finalQ() : s === "thanks" ? thanks() : declined();
+    view.innerHTML = '<div style="display:grid;gap:16px">' + html + '</div>';
+    document.getElementById("jump").value = s;
+    Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.level === state.level));
+    });
+    bind();
+  }
+
+  function on(id, ev, fn) { var el = document.getElementById(id); if (el) el.addEventListener(ev, fn); }
+
+  function bind() {
+    var s = state.screen;
+    if (s === "landing") {
+      BG.forEach(function (b) {
+        Array.prototype.forEach.call(document.querySelectorAll('input[name="bg-' + b.key + '"]'), function (r) {
+          r.addEventListener("change", function () { state.bg[b.key] = Number(r.value); document.getElementById("bgerr").hidden = true; });
+        });
+      });
+      on("consent", "change", function (e) {
+        state.consent = e.target.checked;
+        document.getElementById("start").disabled = !state.consent;
+        document.getElementById("retry").disabled = !state.consent;
+      });
+      var tryStart = function () {
+        if (!state.consent) return;
+        var missing = BG.filter(function (b) { return state.bg[b.key] == null; });
+        if (missing.length) {
+          var e = document.getElementById("bgerr"); e.hidden = false;
+          document.getElementById("bg-" + missing[0].key).scrollIntoView({ block: "center" });
+          return;
+        }
+        beginExperiment();
+      };
+      on("start", "click", tryStart);
+      on("retry", "click", tryStart);
+      on("decline", "click", function () { go("declined"); });
+    } else if (s === "scenario") {
+      on("next", "click", function () { go("s1"); });
+    } else if (STAGES[s]) {
+      Array.prototype.forEach.call(document.querySelectorAll('input[name="ans"]'), function (r) {
+        r.addEventListener("change", function () { state.ans[s] = Number(r.value); document.getElementById("submit").disabled = false; });
+      });
+      on("submit", "click", function () { go(s === "s4" ? "final" : "s" + (STAGES[s].no + 1)); });
+    } else if (s === "final") {
+      Array.prototype.forEach.call(document.querySelectorAll('input[name="fin"]'), function (r) {
+        r.addEventListener("change", function () { state.fin = Number(r.value); document.getElementById("finish").disabled = false; });
+      });
+      on("finish", "click", function () { go("thanks"); });
+    } else if (s === "declined") {
+      on("back", "click", function () { go("landing"); });
+    }
+  }
+
+  /* researcher bar */
+  var jump = document.getElementById("jump");
+  jump.innerHTML = SCREENS.map(function (x) { return '<option value="' + x[0] + '">' + h(x[1]) + '</option>'; }).join("");
+  jump.addEventListener("change", function () { go(jump.value); });
+  Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
+    b.addEventListener("click", function () { state.level = b.dataset.level; render(); });
+  });
+  document.getElementById("hideBar").addEventListener("click", function () { document.getElementById("rbar").hidden = true; });
+
+  render();
+})();
