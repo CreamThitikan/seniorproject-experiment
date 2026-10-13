@@ -107,6 +107,77 @@
     }, function (e) { clearTimeout(timer); throw e; });
   }
 
+  /* ---------- outbox: profile / answer / finish ---------- */
+  // Items are kept in localStorage until the server confirms them, and sent strictly in order.
+  // Each send gets 1 attempt + 3 retries with backoff; after that the item waits for the next trigger
+  // (new item, back online, tab visible again, 30 s interval, next page load). The server ignores
+  // duplicates, so resending something that already arrived is harmless.
+  var QUEUE_KEY = "staybook_outbox";
+  var REJECTED_KEY = "staybook_outbox_rejected";
+  var RETRY_DELAYS_MS = [1000, 3000, 9000];
+  var memQueue = null; // fallback when localStorage is unavailable (e.g. blocked storage)
+  var flushing = false;
+
+  function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function lsSet(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); return true; } catch (e) { return false; } }
+  function loadQueue() { return memQueue || lsGet(QUEUE_KEY) || []; }
+  function saveQueue(q) { if (memQueue || !lsSet(QUEUE_KEY, q)) memQueue = q; }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  function enqueue(action, payload) {
+    var q = loadQueue();
+    q.push({ id: uuid(), action: action, payload: payload });
+    saveQueue(q);
+    flush();
+  }
+
+  function sendWithRetry(item, attempt) {
+    return post(item.action, item.payload).then(function (res) {
+      if (res && res.ok) return "sent";
+      if (res && res.retry) throw new Error(res.error);
+      return "rejected"; // invalid input: resending cannot help
+    }).catch(function (e) {
+      if (window.console) console.warn("send failed", item.action, e && e.message);
+      if (attempt >= RETRY_DELAYS_MS.length) return "later";
+      return wait(RETRY_DELAYS_MS[attempt]).then(function () { return sendWithRetry(item, attempt + 1); });
+    });
+  }
+
+  function flush() {
+    if (flushing) return;
+    var item = loadQueue()[0];
+    if (!item) return;
+    flushing = true;
+    sendWithRetry(item, 0).then(function (outcome) {
+      flushing = false;
+      if (outcome === "later") return;
+      saveQueue(loadQueue().filter(function (x) { return x.id !== item.id; }));
+      if (outcome === "rejected") {
+        var bad = lsGet(REJECTED_KEY) || [];
+        bad.push(item);
+        lsSet(REJECTED_KEY, bad);
+      }
+      flush();
+    });
+  }
+
+  // Last chance when the tab is closed right after the final answer: keepalive lets the request outlive the page.
+  function flushOnExit() {
+    if (!window.APPS_SCRIPT_URL) return;
+    loadQueue().forEach(function (item) {
+      var data = { action: item.action };
+      for (var k in item.payload) data[k] = item.payload[k];
+      try {
+        fetch(window.APPS_SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(data), credentials: "omit", keepalive: true }).catch(function () {});
+      } catch (e) {}
+    });
+  }
+
+  window.addEventListener("online", flush);
+  window.addEventListener("pagehide", flushOnExit);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") flush(); });
+  setInterval(flush, 30000);
+
   function uuid() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     var b = new Uint8Array(16);
@@ -170,6 +241,7 @@
       state.starting = false;
       state.pid = res.participant_id;
       state.level = res.level;
+      enqueue("profile", { participant_id: state.pid, age: state.bg.age, booked: state.bg.booked, exp: state.bg.exp });
       go("scenario");
     }).catch(function (e) {
       state.starting = false;
@@ -372,7 +444,10 @@
         state.done[s] = true;
         this.disabled = true;
         var t = stopTimer(s);
-        if (window.console && IS_TEST) console.info("stage", STAGES[s].no, t);
+        enqueue("answer", {
+          participant_id: state.pid, level: state.level, stage: STAGES[s].no, option_index: state.ans[s],
+          time_ms: t ? t.time_ms : 0, hidden_ms: t ? t.hidden_ms : 0, resumed: false
+        });
         go(s === "s4" ? "final" : "s" + (STAGES[s].no + 1));
       });
     } else if (s === "final") {
@@ -383,6 +458,7 @@
         if (state.finished || state.fin == null) return;
         state.finished = true;
         this.disabled = true;
+        enqueue("finish", { participant_id: state.pid, manipulation_check: state.fin + 1 });
         go("thanks");
       });
     } else if (s === "declined") {
@@ -400,4 +476,5 @@
   document.getElementById("hideBar").addEventListener("click", function () { document.getElementById("rbar").hidden = true; });
 
   render();
+  flush();
 })();
