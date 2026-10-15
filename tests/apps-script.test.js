@@ -19,7 +19,7 @@ eq("bad id", post({ action: "start", participant_id: "=HYPERLINK()" }).error, "b
 eq("bad json", postRaw("{").error, "bad_json");
 eq("bad action", post({ action: "nope" }).error, "bad_action");
 eq("profile", post({ action: "profile", participant_id: ids[0], age: 1, booked: 0, exp: 2 }).ok, true);
-eq("profile row", sheets.Participants.rows[1].slice(3, 6), ["25–34 ปี", "เคย", "ไม่เคยยกเลิกการจองที่พัก"]);
+eq("profile row", sheets.Participants.rows[1].slice(3, 6), ["18–24 ปี", "เคย", "ไม่เคยยกเลิกการจองที่พัก"]);
 eq("profile bad", post({ action: "profile", participant_id: ids[0], age: 9, booked: 0, exp: 2 }).error, "bad_profile");
 const ans = (id, extra) => post(Object.assign({ action: "answer", participant_id: id, level: "L1", stage: 1, option_index: 3, time_ms: 1234.6, hidden_ms: 0, resumed: false }, extra));
 eq("answer L1 D", ans(ids[0]).ok, true);
@@ -41,5 +41,10 @@ eq("finish row", sheets.Participants.rows[1].slice(6, 8), [3, true]);
 eq("formula injection", ctx.safe_("@SUM(A1)"), "'@SUM(A1)");
 ctx.resetCounter();
 eq("reset", [sheets.Config.rows[1][1], sheets.Config.rows[2][1]], [0, 0]);
+// app.js and Code.gs keep separate copies of the option lists; they must match in text and order.
+const appSrc = require("fs").readFileSync(require("path").join(__dirname, "../app.js"), "utf8");
+const appOpts = [...appSrc.matchAll(/opts: (\[[^\]]*\])/g)].map((m) => JSON.parse(m[1]));
+eq("app.js stage options == Code.gs OPTIONS", appOpts.slice(0, 4), [1, 2, 3, 4].map((n) => ctx.OPTIONS[n]));
+eq("app.js background options == Code.gs BG", appOpts.slice(4), [ctx.BG.age, ctx.BG.booked, ctx.BG.exp]);
 console.log(fails ? fails + " FAILED" : "ALL PASSED");
 process.exit(fails ? 1 : 0);
