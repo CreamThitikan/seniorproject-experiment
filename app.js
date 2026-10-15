@@ -431,7 +431,7 @@
       '<label class="check" for="consent"><input type="checkbox" id="consent"' + (state.consent ? " checked" : "") + '><span>ฉันได้อ่านและเข้าใจคำชี้แจงข้างต้นแล้ว และยินยอมเข้าร่วมการศึกษา รวมถึงอนุญาตให้เก็บและใช้ข้อมูลที่เกิดจากการเข้าร่วมของฉันตามวัตถุประสงค์ที่ระบุไว้</span></label>' +
       '<div id="bgerr" class="err" role="alert" hidden>กรุณาตอบข้อมูลพื้นฐานให้ครบทั้ง 3 ข้อก่อนเริ่ม</div>' +
       '<div id="starterr" class="err" role="alert" hidden>ไม่สามารถเริ่มการทดลองได้ กรุณาลองใหม่อีกครั้ง</div>' +
-      '<div class="btns"><button type="button" class="btn" id="start"' + (state.consent ? "" : " disabled") + '>เริ่มการทดลอง</button>' +
+      '<div class="btns"><button type="button" class="btn" id="start"' + (state.consent ? "" : " disabled") + '>เริ่มการทดสอบ</button>' +
       '<button type="button" class="btn" id="retry" hidden>ลองใหม่</button>' +
       '<button type="button" class="txtbtn" id="decline">ไม่ประสงค์เข้าร่วม</button></div></div>';
   }
@@ -441,7 +441,7 @@
       '<p>ลองนึกภาพว่าคุณจองบ้านพักที่เชียงใหม่ผ่านแอป StayBook ไปเมื่อ 1 เดือนที่แล้ว แต่วันนี้วันที่ 5 พ.ย. 2569 คุณมีงานด่วนจึงต้องยกเลิกการจองที่พัก</p>' +
       '<p>ต่อไปนี้คือหน้าจอที่คุณจะเห็นในแต่ละขั้นตอน ดูได้ตามสบาย แล้วตอบตามที่คุณเห็นและรู้สึกจริง ไม่ใช่ข้อสอบ</p></div>' +
       bookingCard() +
-      '<div class="btns"><button type="button" class="btn" id="next">ไปที่ขั้นตอนที่ 1</button></div>';
+      '<div class="btns"><button type="button" class="btn" id="next">ต่อไป</button></div>';
   }
 
   function stage(id) {
@@ -467,7 +467,7 @@
   }
 
   function thanks() {
-    return '<div class="card"><h1>ขอบคุณที่เข้าร่วม</h1><p>คุณผ่านครบทั้ง 4 ขั้นตอนแล้ว เหตุการณ์ทั้งหมดในการศึกษานี้เป็นเรื่องสมมติ ไม่มีการจอง การยกเลิก หรือการคืนเงินจริงเกิดขึ้น</p></div>';
+    return '<div class="card"><h1>ขอบคุณที่เข้าร่วมทำแบบทดสอบ</h1><p>เหตุการณ์ทั้งหมดในการศึกษานี้เป็นเรื่องสมมติ ไม่มีการจอง การยกเลิก หรือการคืนเงินจริงเกิดขึ้น</p></div>';
   }
 
   function declined() {
