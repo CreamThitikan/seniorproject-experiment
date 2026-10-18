@@ -459,6 +459,7 @@
       bookingCard() +
       '<section class="card panel" aria-label="' + h(st.heading) + '"><h2>' + h(st.heading) + '</h2>' + st.L[state.level].map(renderBlock).join("") + '</section>' +
       '<section class="card qcard"><div class="qlabel">คำถาม</div><h2 class="q">' + h(st.q) + '</h2>' +
+      '<p class="muted small">*กรุณาตอบโดยไม่อิงจากประสบการณ์ส่วนตัว ใช้ข้อมูลจากหน้านี้เท่านั้น*</p>' +
       '<fieldset class="opts" aria-label="ตัวเลือกคำตอบ">' + radioGroup("ans", st.opts, sel) + '</fieldset>' +
       '<div class="btns"><button type="button" class="btn" id="submit"' + (sel == null ? " disabled" : "") + '>' + (id === "s4" ? "ส่งคำตอบ" : "ส่งคำตอบและไปต่อ") + '</button></div></section>';
   }
