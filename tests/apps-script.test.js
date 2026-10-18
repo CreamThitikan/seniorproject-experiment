@@ -44,6 +44,9 @@ eq("finish bad", post({ action: "finish", participant_id: ids[0], manipulation_c
 eq("finish", post({ action: "finish", participant_id: ids[0], manipulation_check: 3 }).ok, true);
 eq("finish dup", post({ action: "finish", participant_id: ids[0], manipulation_check: 5 }).duplicate, true);
 eq("finish row", sheets.Participants.rows[1].slice(6, 8), [3, true]);
+const fmt = (sheet, row, col) => sheets[sheet].getRange(row, col).getNumberFormat();
+eq("timestamps shown with date and time", [fmt("Participants", 2, 3), fmt("Participants", 2, 9), fmt("Responses", 2, 10)], ["yyyy-mm-dd hh:mm:ss", "yyyy-mm-dd hh:mm:ss", "yyyy-mm-dd hh:mm:ss"]);
+eq("timestamp values keep the time", sheets.Participants.rows[1][2] instanceof Date || Object.prototype.toString.call(sheets.Participants.rows[1][2]) === "[object Date]", true);
 eq("formula injection", ctx.safe_("@SUM(A1)"), "'@SUM(A1)");
 ctx.resetCounter();
 eq("reset", ["counter", "test_counter", "participant_seq", "test_participant_seq"].map(cfg), [0, 0, 0, 0]);

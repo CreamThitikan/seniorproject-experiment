@@ -16,6 +16,7 @@ function makeSheet(name) {
   return {
     name, rows,
     getLastRow: () => rows.length,
+    getMaxRows: () => Math.max(rows.length, 1000),
     appendRow: (r) => { const i = rows.length; rows.push([]); r.forEach((v, c) => put(i, c, v)); },
     setFrozenRows() {},
     getRange(a, b, c, d) {
@@ -23,6 +24,7 @@ function makeSheet(name) {
       const [r0, c0, nr, nc] = typeof a === "string" ? [0, 0, Math.max(rows.length, 1), 1] : [a - 1, b - 1, c || 1, d || 1];
       const rng = {
         getValue: () => cell(r0, c0),
+        getNumberFormat: () => cellFormat[r0 + "," + c0] || colFormat[c0] || "",
         getValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => cell(r0 + i, c0 + j))),
         setValue: (v) => { put(r0, c0, v); return rng; },
         setValues: (vs) => { vs.forEach((row, i) => row.forEach((v, j) => put(r0 + i, c0 + j, v))); return rng; },

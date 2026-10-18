@@ -22,7 +22,10 @@ var R_HEADERS = ["participant_id", "level", "stage", "option_index", "option_lab
   "resumed", "submitted_at", "expected_correct", "response_type", "is_test"];
 
 // Participants column numbers (1-based)
-var PC = { id: 1, level: 2, age: 4, booked: 5, exp: 6, manip: 7, completed: 8, completedAt: 9, isTest: 10 };
+var PC = { id: 1, level: 2, startedAt: 3, age: 4, booked: 5, exp: 6, manip: 7, completed: 8, completedAt: 9, isTest: 10 };
+var RC_SUBMITTED_AT = 10; // Responses column of submitted_at
+// Timestamps are shown with date and time (in the spreadsheet's time zone).
+var DATETIME_FORMAT = "yyyy-mm-dd hh:mm:ss";
 
 var LEVELS = ["L1", "L2", "L3"];
 var LABELS = ["A", "B", "C", "D"];
@@ -116,7 +119,7 @@ function start_(b) {
   } while (findParticipantRow_(id));
   writeCounter_(seqKey, seq);
 
-  appendIdRow_(sheet_(SHEET_P), safeRow_([id, assigned, new Date(), "", "", "", "", false, "", isTest]));
+  appendIdRow_(sheet_(SHEET_P), safeRow_([id, assigned, new Date(), "", "", "", "", false, "", isTest]), PC.startedAt);
   return { ok: true, participant_id: id, level: assigned };
 }
 
@@ -156,7 +159,7 @@ function answer_(b) {
   appendIdRow_(sheet_(SHEET_R), safeRow_([
     p.id, level, stage, b.option_index, LABELS[b.option_index], OPTIONS[stage][b.option_index],
     Math.round(b.time_ms), Math.round(b.hidden_ms), b.resumed, new Date(), c.ec, c.type, p.isTest
-  ]));
+  ]), RC_SUBMITTED_AT);
   return { ok: true };
 }
 
@@ -168,6 +171,7 @@ function finish_(b) {
 
   var sh = sheet_(SHEET_P);
   if (sh.getRange(p.row, PC.completed).getValue() === true) return { ok: true, duplicate: true };
+  sh.getRange(p.row, PC.completedAt).setNumberFormat(DATETIME_FORMAT);
   sh.getRange(p.row, PC.manip, 1, 3).setValues([[m, true, new Date()]]);
   return { ok: true };
 }
@@ -221,10 +225,14 @@ function pad3_(n) {
   return s;
 }
 
-/** Appends a row whose first cell is a participant id, stored as text so "001" is not turned into 1. */
-function appendIdRow_(sh, row) {
+/**
+ * Appends a row whose first cell is a participant id, stored as text so "001" is not turned into 1.
+ * dateCol (1-based) is the timestamp column, shown with date and time.
+ */
+function appendIdRow_(sh, row, dateCol) {
   var r = sh.getLastRow() + 1;
   sh.getRange(r, 1).setNumberFormat("@");
+  sh.getRange(r, dateCol).setNumberFormat(DATETIME_FORMAT);
   sh.getRange(r, 1, 1, row.length).setValues([row]);
 }
 
@@ -292,6 +300,10 @@ function setup() {
     Object.keys(CONFIG_NOTES).forEach(counterRow_);
     // participant_id columns hold text ids such as "001"
     [SHEET_P, SHEET_R].forEach(function (n) { ss.getSheetByName(n).getRange("A:A").setNumberFormat("@"); });
+    // timestamp columns (also fixes how rows already in the sheet are displayed)
+    var p = ss.getSheetByName(SHEET_P), r = ss.getSheetByName(SHEET_R);
+    [p.getRange(1, PC.startedAt, p.getMaxRows(), 1), p.getRange(1, PC.completedAt, p.getMaxRows(), 1),
+     r.getRange(1, RC_SUBMITTED_AT, r.getMaxRows(), 1)].forEach(function (rg) { rg.setNumberFormat(DATETIME_FORMAT); });
   } finally {
     lock.releaseLock();
   }
