@@ -2,14 +2,21 @@
 // (SpreadsheetApp, LockService, ContentService). Shared by the unit test and the local server.
 const fs = require("fs"), path = require("path"), vm = require("vm");
 
+// Like real Sheets, a numeric-looking string ("001") is stored as a number (1) unless the cell is
+// formatted as plain text ("@") — this is what would break "001" ids if Code.gs forgot the format.
+const NUMERIC = /^\s*-?\d+(\.\d+)?\s*$/;
+
 function makeSheet(name) {
   const rows = [];
+  const colFormat = {}, cellFormat = {};
+  const isText = (r, c) => (cellFormat[r + "," + c] || colFormat[c]) === "@";
+  const coerce = (r, c, v) => (typeof v === "string" && NUMERIC.test(v) && !isText(r, c) ? Number(v) : v);
   const cell = (r, c) => (rows[r] || [])[c] ?? "";
-  const put = (r, c, v) => { while (rows.length <= r) rows.push([]); rows[r][c] = v; };
+  const put = (r, c, v) => { while (rows.length <= r) rows.push([]); rows[r][c] = coerce(r, c, v); };
   return {
     name, rows,
     getLastRow: () => rows.length,
-    appendRow: (r) => { rows.push(r.slice()); },
+    appendRow: (r) => { const i = rows.length; rows.push([]); r.forEach((v, c) => put(i, c, v)); },
     setFrozenRows() {},
     getRange(a, b, c, d) {
       // "A:A" -> whole first column; otherwise (row, col, numRows, numCols), 1-based
@@ -20,6 +27,11 @@ function makeSheet(name) {
         setValue: (v) => { put(r0, c0, v); return rng; },
         setValues: (vs) => { vs.forEach((row, i) => row.forEach((v, j) => put(r0 + i, c0 + j, v))); return rng; },
         setFontWeight: () => rng,
+        setNumberFormat: (f) => {
+          if (typeof a === "string") colFormat[c0] = f;
+          else for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) cellFormat[(r0 + i) + "," + (c0 + j)] = f;
+          return rng;
+        },
         createTextFinder: (t) => {
           let whole = false;
           const tf = {

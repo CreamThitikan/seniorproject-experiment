@@ -2,7 +2,7 @@
  * StayBook experiment backend (Google Apps Script bound to a Google Sheet).
  *
  * Actions (POST body = JSON, sent as text/plain to avoid CORS preflight):
- *   start   { participant_id, is_test }                         -> { ok, participant_id, level }
+ *   start   { is_test }                                         -> { ok, participant_id, level }
  *   profile { participant_id, age, booked, exp }  (option indexes)
  *   answer  { participant_id, level, stage, option_index, time_ms, hidden_ms, resumed }
  *   finish  { participant_id, manipulation_check }  (1-5)
@@ -30,10 +30,10 @@ var D_INDEX = 3;
 
 // Must match the option text in app.js exactly (order = what the participant sees).
 var OPTIONS = {
-  1: ["เกิดเหตุร้ายแรง", "ยกเลิกก่อนเช็คอิน 9 วัน", "จ่ายด้วยบัตรเครดิต", "ในหน้านี้ไม่ได้ระบุ"],
-  2: ["โทรแจ้ง", "แจ้งเจ้าของที่พัก", "ส่งอีเมลยืนยัน", "ในหน้านี้ไม่ได้ระบุ"],
-  3: ["StayBook ยังตรวจสอบคำขออยู่", "StayBook ส่งเงินแล้ว ตอนนี้รอธนาคารดำเนินการ", "รอเจ้าของที่พักดำเนินการ", "ในหน้านี้ไม่ได้ระบุ"],
-  4: ["โทรติดต่อ StayBook", "ยื่นคำขอคืนเงินใหม่", "ติดต่อเจ้าของที่พัก", "ในหน้านี้ไม่ได้ระบุ"]
+  1: ["เกิดเหตุร้ายแรง", "ยกเลิกก่อนเช็คอิน 9 วัน", "จ่ายด้วยบัตรเครดิต", "ข้อมูลไม่เพียงพอ"],
+  2: ["โทรแจ้ง", "แจ้งเจ้าของที่พัก", "ส่งอีเมลยืนยัน", "ข้อมูลไม่เพียงพอ"],
+  3: ["StayBook ยังตรวจสอบคำขออยู่", "StayBook ส่งเงินแล้ว ตอนนี้รอธนาคารดำเนินการ", "รอเจ้าของที่พักดำเนินการ", "ข้อมูลไม่เพียงพอ"],
+  4: ["โทรติดต่อ StayBook", "ยื่นคำขอคืนเงินใหม่", "ติดต่อเจ้าของที่พัก", "ข้อมูลไม่เพียงพอ"]
 };
 
 // Correct reason for L2/L3, identified by text rather than position.
@@ -59,8 +59,10 @@ var RT = {
 };
 
 var COUNTER_KEYS = { real: "counter", test: "test_counter" };
+// Running participant numbers: real = 001, 002, ...; test (?dev=1) = T001, T002, ...
+var SEQ_KEYS = { real: "participant_seq", test: "test_participant_seq" };
 var MAX_TIME_MS = 30 * 24 * 60 * 60 * 1000; // sanity bound only; long times are kept and handled in analysis
-var ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+var ID_RE = /^T?\d{3,}$/;
 
 /* ---------------- HTTP entry points ---------------- */
 
@@ -96,23 +98,25 @@ function doPost(e) {
 /* ---------------- actions (called while holding the script lock) ---------------- */
 
 function start_(b) {
-  if (!ID_RE.test(String(b.participant_id || ""))) return fail_("bad_participant_id");
-  var id = String(b.participant_id).toLowerCase();
   var isTest = b.is_test === true;
 
-  // Same id again (client retry after a lost response): return the level already assigned.
-  var row = findParticipantRow_(id);
-  if (row) {
-    var level = sheet_(SHEET_P).getRange(row, PC.level).getValue();
-    return { ok: true, participant_id: id, level: level };
-  }
-
-  var key = isTest ? COUNTER_KEYS.test : COUNTER_KEYS.real;
-  var n = readCounter_(key);
+  var levelKey = isTest ? COUNTER_KEYS.test : COUNTER_KEYS.real;
+  var n = readCounter_(levelKey);
   var assigned = LEVELS[n % LEVELS.length];
-  writeCounter_(key, n + 1);
+  writeCounter_(levelKey, n + 1);
 
-  sheet_(SHEET_P).appendRow(safeRow_([id, assigned, new Date(), "", "", "", "", false, "", isTest]));
+  // Next free number. Numbers already in the sheet are skipped, so resetCounter() can never hand out
+  // an id that existing rows use.
+  var seqKey = isTest ? SEQ_KEYS.test : SEQ_KEYS.real;
+  var seq = readCounter_(seqKey);
+  var id;
+  do {
+    seq++;
+    id = (isTest ? "T" : "") + pad3_(seq);
+  } while (findParticipantRow_(id));
+  writeCounter_(seqKey, seq);
+
+  appendIdRow_(sheet_(SHEET_P), safeRow_([id, assigned, new Date(), "", "", "", "", false, "", isTest]));
   return { ok: true, participant_id: id, level: assigned };
 }
 
@@ -149,7 +153,7 @@ function answer_(b) {
   if (hasAnswer_(p.id, stage)) return { ok: true, duplicate: true };
 
   var c = classify(level, stage, b.option_index);
-  sheet_(SHEET_R).appendRow(safeRow_([
+  appendIdRow_(sheet_(SHEET_R), safeRow_([
     p.id, level, stage, b.option_index, LABELS[b.option_index], OPTIONS[stage][b.option_index],
     Math.round(b.time_ms), Math.round(b.hidden_ms), b.resumed, new Date(), c.ec, c.type, p.isTest
   ]));
@@ -186,7 +190,7 @@ function classify(level, stage, optionIndex) {
 /* ---------------- helpers ---------------- */
 
 function participant_(rawId) {
-  var id = String(rawId || "").toLowerCase();
+  var id = String(rawId || "");
   if (!ID_RE.test(id)) return null;
   var row = findParticipantRow_(id);
   if (!row) return null;
@@ -209,6 +213,19 @@ function hasAnswer_(id, stage) {
     if (Number(sh.getRange(cells[i].getRow(), 3).getValue()) === stage) return true;
   }
   return false;
+}
+
+function pad3_(n) {
+  var s = String(n);
+  while (s.length < 3) s = "0" + s;
+  return s;
+}
+
+/** Appends a row whose first cell is a participant id, stored as text so "001" is not turned into 1. */
+function appendIdRow_(sh, row) {
+  var r = sh.getLastRow() + 1;
+  sh.getRange(r, 1).setNumberFormat("@");
+  sh.getRange(r, 1, 1, row.length).setValues([row]);
 }
 
 function inRange_(v, n) {
@@ -243,17 +260,21 @@ function sheet_(name) {
   return sh;
 }
 
-function readCounter_(key) {
+function counterRow_(key) {
   var sh = sheet_(SHEET_C);
   var cell = sh.getRange("A:A").createTextFinder(key).matchEntireCell(true).findNext();
-  if (!cell) throw new Error("Missing Config key " + key + " — run setup()");
-  return Number(sh.getRange(cell.getRow(), 2).getValue()) || 0;
+  if (cell) return cell.getRow();
+  // Key added in a later version of this script: create it rather than requiring setup() again.
+  sh.appendRow([key, 0, CONFIG_NOTES[key] || ""]);
+  return sh.getLastRow();
+}
+
+function readCounter_(key) {
+  return Number(sheet_(SHEET_C).getRange(counterRow_(key), 2).getValue()) || 0;
 }
 
 function writeCounter_(key, value) {
-  var sh = sheet_(SHEET_C);
-  var cell = sh.getRange("A:A").createTextFinder(key).matchEntireCell(true).findNext();
-  sh.getRange(cell.getRow(), 2).setValue(value);
+  sheet_(SHEET_C).getRange(counterRow_(key), 2).setValue(value);
 }
 
 /* ---------------- run from the editor ---------------- */
@@ -267,16 +288,21 @@ function setup() {
   try {
     ensureSheet_(ss, SHEET_P, P_HEADERS);
     ensureSheet_(ss, SHEET_R, R_HEADERS);
-    var c = ensureSheet_(ss, SHEET_C, ["key", "value", "note"]);
-    [[COUNTER_KEYS.real, 0, "ตัวนับสุ่มกลุ่มของผู้เข้าร่วมจริง (L1, L2, L3, ...)"],
-     [COUNTER_KEYS.test, 0, "ตัวนับสุ่มกลุ่มของการทดสอบ (?dev=1)"]].forEach(function (r) {
-      if (!c.getRange("A:A").createTextFinder(r[0]).matchEntireCell(true).findNext()) c.appendRow(r);
-    });
+    ensureSheet_(ss, SHEET_C, ["key", "value", "note"]);
+    Object.keys(CONFIG_NOTES).forEach(counterRow_);
+    // participant_id columns hold text ids such as "001"
+    [SHEET_P, SHEET_R].forEach(function (n) { ss.getSheetByName(n).getRange("A:A").setNumberFormat("@"); });
   } finally {
     lock.releaseLock();
   }
   Logger.log("setup done");
 }
+
+var CONFIG_NOTES = {};
+CONFIG_NOTES[COUNTER_KEYS.real] = "ตัวนับสุ่มกลุ่มของผู้เข้าร่วมจริง (L1, L2, L3, ...)";
+CONFIG_NOTES[COUNTER_KEYS.test] = "ตัวนับสุ่มกลุ่มของการทดสอบ (?dev=1)";
+CONFIG_NOTES[SEQ_KEYS.real] = "เลขผู้เข้าร่วมล่าสุดที่ออกไป (001, 002, ...)";
+CONFIG_NOTES[SEQ_KEYS.test] = "เลขผู้เข้าร่วมทดสอบล่าสุดที่ออกไป (T001, T002, ...)";
 
 function ensureSheet_(ss, name, headers) {
   var sh = ss.getSheetByName(name) || ss.insertSheet(name);
@@ -287,13 +313,16 @@ function ensureSheet_(ss, name, headers) {
   return sh;
 }
 
-/** Resets both assignment counters to 0 (next real participant gets L1). Do not run during data collection. */
+/**
+ * Resets the level counters and participant numbers to 0: the next real participant gets L1 and the lowest
+ * free number (001 if those rows were deleted, otherwise the first number not already in the sheet).
+ * Do not run during data collection.
+ */
 function resetCounter() {
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    writeCounter_(COUNTER_KEYS.real, 0);
-    writeCounter_(COUNTER_KEYS.test, 0);
+    [COUNTER_KEYS.real, COUNTER_KEYS.test, SEQ_KEYS.real, SEQ_KEYS.test].forEach(function (k) { writeCounter_(k, 0); });
   } finally {
     lock.releaseLock();
   }

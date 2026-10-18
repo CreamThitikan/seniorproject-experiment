@@ -13,7 +13,7 @@
       no: 1, heading: "ยกเลิกการจอง",
       ctx: "คุณเปิดหน้ายกเลิกเพื่อดูว่ายกเลิกแล้วจะได้เงินคืนเท่าไร",
       q: "ทำไมคุณถึงได้เงินคืนแค่บางส่วน?",
-      opts: ["เกิดเหตุร้ายแรง", "ยกเลิกก่อนเช็คอิน 9 วัน", "จ่ายด้วยบัตรเครดิต", "ในหน้านี้ไม่ได้ระบุ"],
+      opts: ["เกิดเหตุร้ายแรง", "ยกเลิกก่อนเช็คอิน 9 วัน", "จ่ายด้วยบัตรเครดิต", "ข้อมูลไม่เพียงพอ"],
       L: {
         L1: [{ title: "เงื่อนไขการขอคืนเงินหากยกเลิกตอนนี้", rows: [["ประเภทเงินคืน", "คืนบางส่วน"], ["จำนวนเงินคืน", "฿3,000"], ["ช่องทางการรับเงิน", "บัตรเครดิต ••4821"]] }],
         L2: [
@@ -31,18 +31,27 @@
       no: 2, heading: "ผลการยกเลิกและคำขอคืนเงิน",
       ctx: "หลังจากคุณกดยกเลิกการจองและขอเงินคืน คุณตรวจสอบว่าคำขอคืนเงินได้รับการอนุมัติหรือไม่",
       q: "StayBook ทำอะไรเพื่อยืนยันว่าการจองยกเลิกแล้ว?",
-      opts: ["โทรแจ้ง", "แจ้งเจ้าของที่พัก", "ส่งอีเมลยืนยัน", "ในหน้านี้ไม่ได้ระบุ"],
+      opts: ["โทรแจ้ง", "แจ้งเจ้าของที่พัก", "ส่งอีเมลยืนยัน", "ข้อมูลไม่เพียงพอ"],
       L: {
         L1: [{ rows: [["การจอง", "ยกเลิกแล้ว"], ["สถานะ", "คำขออนุมัติแล้ว"]] }],
-        L2: [{ rows: [["การจอง", "ยกเลิกแล้ว"], ["สถานะ", "คำขออนุมัติแล้ว"]], lines: ["อนุมัติตามนโยบายการคืนเงิน", "✓ ส่งอีเมลยืนยันแล้ว"] }],
-        L3: [{ rows: [["การจอง", "ยกเลิกแล้ว"], ["", "กู้คืนการจองไม่ได้"], ["สถานะ", "คำขออนุมัติแล้ว"]], lines: ["อนุมัติตามนโยบายการคืนเงิน", "ตัดสินโดยระบบอัตโนมัติ ไม่ต้องรอเจ้าของที่พัก", "✓ ส่งอีเมลยืนยันยกเลิกการจองแล้ว", "✓ แจ้งเจ้าของที่พักแล้ว"] }]
+        L2: [{ rows: [["การจอง", "ยกเลิกแล้ว"], ["สถานะ", "คำขออนุมัติแล้ว (อนุมัติตามนโยบายการคืนเงิน)"]], lines: [ "✓ ส่งอีเมลเพื่อยืนยันการยกเลิกการจองแล้ว"] }],
+        L3: [{ rows: [["การจอง", "ยกเลิกแล้ว"], ["", "กู้คืนการจองไม่ได้"], ["สถานะ", "คำขออนุมัติแล้ว (อนุมัติตามนโยบายการคืนเงิน)"]], lines: ["ตัดสินโดยระบบอัตโนมัติ ไม่ต้องรอเจ้าของที่พัก", "✓ ส่งอีเมลเพื่อยืนยันการยกเลิกการจองแล้ว"] }, 
+             { title: "ข้อมูลอื่นที่เกี่ยวข้องกับการจองนี้",
+    lines: [
+      "ห้องพักถูกปล่อยกลับเข้าสู่ระบบแล้ว",
+      "แต้มสะสมจากการจองนี้จะถูกปรับคืนภายใน 3 วันทำการ",
+      "คูปองที่ใช้กับการจองนี้ไม่สามารถนำกลับมาใช้ได้",
+      "ใบกำกับภาษีของการจองนี้ถูกยกเลิกแล้ว",
+      "การจองที่ยกเลิกแล้วไม่สามารถเขียนรีวิวที่พักได้",
+      "ประวัติการจองนี้จะแสดงในบัญชีของคุณต่อไปอีก 12 เดือน"
+    ] }]
       }
     },
     s3: {
       no: 3, heading: "การคืนเงินของคุณ",
       ctx: "4 วันต่อมา วันนี้เป็นวันที่ 9 พ.ย. 2569 คุณเข้ามาเช็คสถานะการคืนเงิน",
       q: "ทำไมเงินของคุณถึงยังไม่เข้าบัตร?",
-      opts: ["StayBook ยังตรวจสอบคำขออยู่", "StayBook ส่งเงินแล้ว ตอนนี้รอธนาคารดำเนินการ", "รอเจ้าของที่พักดำเนินการ", "ในหน้านี้ไม่ได้ระบุ"],
+      opts: ["StayBook ยังตรวจสอบคำขออยู่", "StayBook ส่งเงินแล้ว ตอนนี้รอธนาคารดำเนินการ", "รอเจ้าของที่พักดำเนินการ", "ข้อมูลไม่เพียงพอ"],
       L: {
         L1: [{ rows: [["อัปเดตล่าสุด", "9 พ.ย."], ["จำนวนเงินคืน", "฿3,000"], ["ช่องทางรับเงินคืน", "บัตรเครดิต ••4821"], ["สถานะการคืนเงิน", "กำลังดำเนินการ"]] }],
         L2: [{ rows: [["อัปเดตล่าสุด", "9 พ.ย."], ["จำนวนเงินคืน", "฿3,000"], ["ช่องทางรับเงินคืน", "บัตรเครดิต ••4821"], ["สถานะการคืนเงิน", "กำลังดำเนินการ"]],
@@ -56,12 +65,12 @@
       no: 4, heading: "รายละเอียดการคืนเงิน",
       ctx: "คุณกดเข้าอีกหน้าหนึ่ง เพื่อดูว่าคุณจะได้รับเงินคืนเมื่อไร",
       q: "หากเกินวันที่ 20 พ.ย. แล้วเงินยังไม่เข้าบัญชีของคุณ คุณควรทำอย่างไรต่อ?",
-      opts: ["โทรติดต่อ StayBook", "ยื่นคำขอคืนเงินใหม่", "ติดต่อเจ้าของที่พัก", "ในหน้านี้ไม่ได้ระบุ"],
+      opts: ["โทรติดต่อ StayBook", "ยื่นคำขอคืนเงินใหม่", "ติดต่อเจ้าของที่พัก", "ข้อมูลไม่เพียงพอ"],
       L: {
         L1: [{ rows: [["จำนวนเงินคืน", "฿3,000"], ["คืนเงินไปที่", "บัตรเครดิต ••4821"]] }, { title: "ระยะเวลาการคืนเงิน", hl: "คาดว่าจะได้รับเงินคืนภายใน 20 พ.ย." }],
         L2: [{ rows: [["จำนวนเงินคืน", "฿3,000"], ["คืนเงินไปที่", "บัตรเครดิต ••4821"]] }, { title: "ระยะเวลาการคืนเงิน", hl: "คาดว่าจะได้รับเงินคืนภายใน 20 พ.ย.", text: TXT4, notes: NOTES4 }],
         L3: [{ rows: [["จำนวนเงินคืน", "฿3,000"], ["คืนเงินไปที่", "บัตรเครดิต ••4821"]] }, { title: "ระยะเวลาการคืนเงิน", hl: "คาดว่าจะได้รับเงินคืนภายใน 20 พ.ย.", text: TXT4, notes: NOTES4 },
-          { title: "ระยะเวลาคืนเงินแต่ละกรณี", text: "ระยะเวลาที่เงินคืนแสดงในบัญชีอาจแตกต่างกันตามช่องทางการชำระเงิน",
+          { title: "ระยะเวลาคืนเงินแต่ละกรณี",
             rows: [["บัตรเดบิต", "เงินคืนอาจใช้เวลาหลายวันทำการกว่าจะแสดงในบัญชี"], ["การโอนเงินผ่านธนาคาร", "เงินคืนอาจใช้เวลาหลายวันทำการในการประมวลผล"], ["กระเป๋าเงินดิจิทัล", "เงินคืนอาจแสดงในบัญชีเร็วกว่าการคืนเงินผ่านบัตรในบางกรณี"], ["การชำระเงินผ่านผู้ให้บริการภายนอก", "ระยะเวลาการคืนเงินอาจขึ้นอยู่กับผู้ให้บริการที่ทำรายการชำระเงิน"], ["การจองที่พักที่เป็นผู้ดำเนินการชำระเงิน", "ระยะเวลาการคืนเงินอาจแตกต่างจากการชำระเงินที่ดำเนินการโดยแพลตฟอร์ม"], ["การคืนเงินหลายรายการ", "เงินคืนแต่ละรายการอาจแสดงในบัญชีในเวลาที่แตกต่างกัน"]] }]
       }
     }
@@ -90,21 +99,24 @@
   var IS_TEST = DEV;
   var STORE_SUFFIX = MOCK ? "_mock" : DEV ? "_dev" : ""; // keeps test sessions/queues apart from real ones
   var REQUEST_TIMEOUT_MS = 15000;
+  // "start" may wait up to 20 s for the server lock; giving up earlier would leave the server assigning a
+  // number the browser never learns about.
+  var START_TIMEOUT_MS = 35000;
+  var PID_RE = /^T?\d{3,}$/; // issued by the server: 001, 002, ... (tests: T001, ...)
 
-  // level stays null until the server assigns one; pendingId is reused on retry so a lost
-  // "start" response can never assign the same participant twice.
-  var state = { level: null, screen: "landing", bg: {}, consent: false, ans: {}, fin: null, pid: null, pendingId: null, starting: false, done: {}, finished: false, resumed: false };
+  // pid and level stay null until the server's "start" response assigns them.
+  var state = { level: null, screen: "landing", bg: {}, consent: false, ans: {}, fin: null, pid: null, starting: false, done: {}, finished: false, resumed: false };
   var view = document.getElementById("view");
 
   /* ---------- server ---------- */
   // text/plain keeps this a "simple" CORS request, so the browser sends no preflight (Apps Script cannot answer one).
-  function post(action, payload) {
+  function post(action, payload, timeoutMs) {
     if (MOCK) return mockPost(action, payload);
     if (!window.APPS_SCRIPT_URL) return Promise.reject(new Error("APPS_SCRIPT_URL is not set in config.js"));
     var data = { action: action };
     for (var k in payload) data[k] = payload[k];
     var ctl = typeof AbortController === "function" ? new AbortController() : null;
-    var timer = setTimeout(function () { if (ctl) ctl.abort(); }, REQUEST_TIMEOUT_MS);
+    var timer = setTimeout(function () { if (ctl) ctl.abort(); }, timeoutMs || REQUEST_TIMEOUT_MS);
     return fetch(window.APPS_SCRIPT_URL, {
       method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(data),
       credentials: "omit", redirect: "follow", signal: ctl ? ctl.signal : undefined
@@ -123,7 +135,7 @@
   function saveSession() {
     try {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify({
-        pid: state.pid, pendingId: state.pendingId, level: state.level, screen: state.screen,
+        pid: state.pid, level: state.level, screen: state.screen,
         done: state.done, finished: state.finished, resumed: state.resumed
       }));
     } catch (e) {}
@@ -132,9 +144,7 @@
   function restoreSession() {
     var saved = null;
     try { saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null"); } catch (e) {}
-    if (!saved) return;
-    state.pendingId = saved.pendingId || null;
-    if (!saved.pid || LEVELS.indexOf(saved.level) < 0 || RESUMABLE.indexOf(saved.screen) < 0) return;
+    if (!saved || !PID_RE.test(String(saved.pid)) || LEVELS.indexOf(saved.level) < 0 || RESUMABLE.indexOf(saved.screen) < 0) return;
     state.pid = saved.pid;
     state.level = saved.level;
     state.screen = saved.screen;
@@ -163,7 +173,7 @@
   function enqueue(action, payload) {
     if (!payload.participant_id) { devLog("not sent (no participant yet — jumped here from the researcher bar)", action, payload); return; }
     var q = loadQueue();
-    q.push({ id: uuid(), action: action, payload: payload });
+    q.push({ id: Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8), action: action, payload: payload });
     saveQueue(q);
     devStatus();
     flush();
@@ -218,15 +228,6 @@
   document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") flush(); });
   setInterval(flush, 30000);
 
-  function uuid() {
-    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-    var b = new Uint8Array(16);
-    crypto.getRandomValues(b);
-    b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
-    var x = Array.prototype.map.call(b, function (n) { return (n + 256).toString(16).slice(1); }).join("");
-    return x.slice(0, 8) + "-" + x.slice(8, 12) + "-" + x.slice(12, 16) + "-" + x.slice(16, 20) + "-" + x.slice(20);
-  }
-
   /* ---------- dev / mock ---------- */
   function devLog() {
     if (DEV && window.console) console.info.apply(console, ["[staybook]"].concat([].slice.call(arguments)));
@@ -235,7 +236,7 @@
   function devStatus() {
     var el = document.getElementById("devStatus");
     if (!DEV || !el) return;
-    el.textContent = (MOCK ? "mock · " : "is_test · ") + (state.pid ? "ID " + state.pid.slice(0, 8) + " · " + state.level : "ยังไม่เริ่ม") +
+    el.textContent = (MOCK ? "mock · " : "is_test · ") + (state.pid ? "ID " + state.pid + " · " + state.level : "ยังไม่เริ่ม") +
       " · ค้างส่ง " + loadQueue().length;
   }
 
@@ -245,15 +246,18 @@
   function mockPost(action, p) {
     return wait(300).then(function () {
       if (MOCK_FAIL) throw new Error("mock network failure (&fail=1)");
-      var db = lsGet(MOCK_DB_KEY) || { test_counter: 0, participants: {}, responses: [] };
+      var db = lsGet(MOCK_DB_KEY) || {};
+      db.test_counter = db.test_counter || 0;
+      db.test_participant_seq = db.test_participant_seq || 0;
+      db.participants = db.participants || {};
+      db.responses = db.responses || [];
       var me = db.participants[p.participant_id];
       var res = { ok: true };
       if (action === "start") {
-        if (!me) {
-          me = db.participants[p.participant_id] = { assigned_level: LEVELS[db.test_counter % 3], started_at: new Date().toISOString(), is_test: true };
-          db.test_counter++;
-        }
-        res = { ok: true, participant_id: p.participant_id, level: me.assigned_level };
+        var id = "T" + ("00" + (++db.test_participant_seq)).slice(-Math.max(3, String(db.test_participant_seq).length));
+        db.participants[id] = { assigned_level: LEVELS[db.test_counter % 3], started_at: new Date().toISOString(), is_test: true };
+        res = { ok: true, participant_id: id, level: LEVELS[db.test_counter % 3] };
+        db.test_counter++;
       } else if (!me) {
         res = { ok: false, error: "unknown_participant", retry: false };
       } else if (action === "profile") {
@@ -326,13 +330,15 @@
   function beginExperiment() {
     if (state.starting || state.pid) return;
     state.starting = true;
-    if (!state.pendingId) { state.pendingId = uuid(); saveSession(); }
     var startBtn = document.getElementById("start"), retryBtn = document.getElementById("retry");
     startBtn.disabled = true;
     retryBtn.disabled = true;
     document.getElementById("starterr").hidden = true;
-    post("start", { participant_id: state.pendingId, is_test: IS_TEST }).then(function (res) {
-      if (!res || !res.ok || LEVELS.indexOf(res.level) < 0) throw new Error("start rejected: " + JSON.stringify(res));
+    // No id is made up locally: until the server answers, the participant stays on this page.
+    post("start", { is_test: IS_TEST }, START_TIMEOUT_MS).then(function (res) {
+      if (!res || !res.ok || LEVELS.indexOf(res.level) < 0 || !PID_RE.test(String(res.participant_id))) {
+        throw new Error("start rejected: " + JSON.stringify(res));
+      }
       state.starting = false;
       state.pid = res.participant_id;
       state.level = res.level;
@@ -413,7 +419,8 @@
         radioGroup("bg-" + b.key, b.opts, state.bg[b.key]) + '</fieldset>';
     }).join("");
     return '' +
-      '<div class="card"><h1>แบบทดสอบสำหรับการศึกษาการอ่านข้อมูล</h1></div>' +
+      '<div class="card"><h1>แบบทดสอบสำหรับการศึกษาการอ่านข้อมูล</h1>' +
+      '<p class="muted">แบบทดสอบนี้เป็นส่วนหนึ่งของรายวิชา 2206491 โครงการสารสนเทศศึกษา 1 สาขาวิชาเทคโนโลยีภาษาและสารสนเทศ คณะอักษรศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</p></div>' +
       '<div class="card"><h2>คำชี้แจงแบบทดสอบ</h2><ul class="list">' +
       '<li>แบบทดสอบประกอบด้วยข้อมูลการคืนเงินของแพลตฟอร์มจองที่พักจำลองทั้งหมด 4 ขั้นตอน และคำถามสั้นขั้นตอนละ 1 ข้อ</li>' +
       '<li>เหตุการณ์ทั้งหมดเป็นเรื่องสมมติ ไม่มีการจอง การยกเลิก หรือการคืนเงินจริง</li>' +
