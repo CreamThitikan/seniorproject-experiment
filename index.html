@@ -47,6 +47,8 @@
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.65; }
 button, select, input { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
+/* #view gets focus on every screen change (for screen readers); it is not a control, so no ring around the whole page */
+#view:focus, #view:focus-visible { outline: none; }
 
 /* researcher bar */
 .rbar { background: var(--rbar); color: var(--rbar-ink); font-size: 14px; line-height: 1.5; padding-block: 10px; padding-inline: 16px; }
