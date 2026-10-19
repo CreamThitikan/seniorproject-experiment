@@ -145,6 +145,11 @@ td:last-child { font-weight: 600; white-space: nowrap; text-align: right; }
 .btns { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .btn { background: var(--brand); color: var(--brand-ink); border: 0; border-radius: 10px; padding: 12px 24px; font-weight: 600; cursor: pointer; }
 .btn:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+/* waiting for the server after "start": keep the button's colour and show a small spinner */
+.btn.busy:disabled { background: var(--brand); color: var(--brand-ink); cursor: progress; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.btn.busy::before { content: ""; width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid currentColor; border-right-color: transparent; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .btn.busy::before { animation-duration: 2.4s; } }
 .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
 .txtbtn { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 8px 4px; }
 .err { background: var(--err-soft); color: var(--err); border-radius: 8px; padding: 10px 14px; font-weight: 600; }

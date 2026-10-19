@@ -334,6 +334,11 @@
     startBtn.disabled = true;
     retryBtn.disabled = true;
     document.getElementById("starterr").hidden = true;
+    // Waiting state on whichever button was pressed, so the page does not look frozen.
+    var busyBtn = startBtn.hidden ? retryBtn : startBtn, label = busyBtn.textContent;
+    busyBtn.textContent = "กำลังเริ่ม...";
+    busyBtn.classList.add("busy");
+    busyBtn.setAttribute("aria-busy", "true");
     // No id is made up locally: until the server answers, the participant stays on this page.
     post("start", { is_test: IS_TEST }, START_TIMEOUT_MS).then(function (res) {
       if (!res || !res.ok || LEVELS.indexOf(res.level) < 0 || !PID_RE.test(String(res.participant_id))) {
@@ -348,6 +353,9 @@
       state.starting = false;
       if (state.screen !== "landing") return;
       if (window.console) console.warn(e);
+      busyBtn.textContent = label;
+      busyBtn.classList.remove("busy");
+      busyBtn.removeAttribute("aria-busy");
       document.getElementById("starterr").hidden = false;
       startBtn.hidden = true;
       retryBtn.hidden = false;
@@ -592,5 +600,10 @@
   }
   go(state.screen);
   devStatus();
+  // Wake Apps Script while the participant reads the first page, so "start" is answered faster.
+  // A plain GET runs doGet only: nothing is written and no counter moves.
+  if (!MOCK && !state.pid && window.APPS_SCRIPT_URL) {
+    try { fetch(window.APPS_SCRIPT_URL, { mode: "no-cors", credentials: "omit" }).catch(function () {}); } catch (e) {}
+  }
   flush();
 })();

@@ -17,6 +17,7 @@ function makeSheet(name) {
     name, rows,
     getLastRow: () => rows.length,
     getMaxRows: () => Math.max(rows.length, 1000),
+    getDataRange() { return this.getRange(1, 1, Math.max(rows.length, 1), Math.max(1, ...rows.map((r) => r.length))); },
     appendRow: (r) => { const i = rows.length; rows.push([]); r.forEach((v, c) => put(i, c, v)); },
     setFrozenRows() {},
     getRange(a, b, c, d) {

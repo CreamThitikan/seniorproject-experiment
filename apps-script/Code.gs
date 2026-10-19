@@ -100,24 +100,40 @@ function doPost(e) {
 
 /* ---------------- actions (called while holding the script lock) ---------------- */
 
+// Every Spreadsheet call costs a round trip, so start_ reads the Config tab and the id column once each.
 function start_(b) {
   var isTest = b.is_test === true;
-
   var levelKey = isTest ? COUNTER_KEYS.test : COUNTER_KEYS.real;
-  var n = readCounter_(levelKey);
+  var seqKey = isTest ? SEQ_KEYS.test : SEQ_KEYS.real;
+
+  var config = sheet_(SHEET_C);
+  var rows = config.getDataRange().getValues();
+  var rowOf = {};
+  rows.forEach(function (r, i) { rowOf[r[0]] = i + 1; });
+  var value = function (key) {
+    if (!rowOf[key]) rowOf[key] = counterRow_(key); // key missing (older sheet): created with value 0
+    return Number((rows[rowOf[key] - 1] || [])[1]) || 0;
+  };
+
+  var n = value(levelKey);
   var assigned = LEVELS[n % LEVELS.length];
-  writeCounter_(levelKey, n + 1);
 
   // Next free number. Numbers already in the sheet are skipped, so resetCounter() can never hand out
   // an id that existing rows use.
-  var seqKey = isTest ? SEQ_KEYS.test : SEQ_KEYS.real;
-  var seq = readCounter_(seqKey);
+  var taken = {};
+  var p = sheet_(SHEET_P);
+  if (p.getLastRow() > 1) {
+    p.getRange(2, 1, p.getLastRow() - 1, 1).getValues().forEach(function (r) { taken[String(r[0])] = true; });
+  }
+  var seq = value(seqKey);
   var id;
   do {
     seq++;
     id = (isTest ? "T" : "") + pad3_(seq);
-  } while (findParticipantRow_(id));
-  writeCounter_(seqKey, seq);
+  } while (taken[id]);
+
+  config.getRange(rowOf[levelKey], 2).setValue(n + 1);
+  config.getRange(rowOf[seqKey], 2).setValue(seq);
 
   appendIdRow_(sheet_(SHEET_P), safeRow_([id, assigned, new Date(), "", "", "", "", false, "", isTest]), PC.startedAt);
   return { ok: true, participant_id: id, level: assigned };
@@ -262,10 +278,13 @@ function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
+var sheetCache_ = {}; // per request
+
 function sheet_(name) {
+  if (sheetCache_[name]) return sheetCache_[name];
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
   if (!sh) throw new Error("Missing sheet " + name + " — run setup() first");
-  return sh;
+  return (sheetCache_[name] = sh);
 }
 
 function counterRow_(key) {
