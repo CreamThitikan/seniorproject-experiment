@@ -506,7 +506,7 @@
     var s = state.screen;
     var html = s === "landing" ? landing() : s === "scenario" ? scenario() : STAGES[s] ? stage(s) : s === "final" ? finalQ() : s === "thanks" ? thanks() : declined();
     view.innerHTML = '<div style="display:grid;gap:16px">' + html + '</div>';
-    document.getElementById("jump").value = s;
+    if (jump) jump.value = s;
     Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
       b.setAttribute("aria-pressed", String(b.dataset.level === state.level));
     });
@@ -574,27 +574,30 @@
     }
   }
 
-  /* researcher bar */
+  /* researcher bar — only exists in dev mode, so participants (and link previews) never get its markup */
+  var RBAR_HTML = "<div class=\"rbar\" id=\"rbar\">\n  <div class=\"rbar-in\">\n    <b>แถบผู้วิจัย (ผู้เข้าร่วมจะไม่เห็นแถบนี้)</b>\n    <div class=\"seg\" role=\"group\" aria-label=\"เลือกระดับข้อมูล\">\n      <button type=\"button\" data-level=\"L1\" aria-pressed=\"false\">L1</button>\n      <button type=\"button\" data-level=\"L2\" aria-pressed=\"true\">L2</button>\n      <button type=\"button\" data-level=\"L3\" aria-pressed=\"false\">L3</button>\n    </div>\n    <label for=\"jump\" class=\"small\">ไปที่หน้า</label>\n    <select id=\"jump\" aria-label=\"ไปที่หน้า\"></select>\n    <button type=\"button\" class=\"link\" id=\"hideBar\">ซ่อนแถบ</button>\n    <span class=\"small\" id=\"devStatus\"></span>\n    <details>\n      <summary>ประเด็นที่ยังรอผู้วิจัยยืนยัน</summary>\n      <ul>\n        <li>Stage 2 L3: \"ส่งอีเมลยืนยันแล้ว\" (ข้อ C) และ \"แจ้งเจ้าของที่พักแล้ว\" (ข้อ B) ตอบคำถามได้ทั้งคู่</li>\n        <li>Stage 2: L2 ใช้ \"ส่งอีเมลยืนยันแล้ว\" แต่ L3 ใช้ \"ส่งอีเมลยืนยันยกเลิกการจองแล้ว\" ตาม Google Doc ล่าสุด และใน Google Doc L3 ยังมีบรรทัด \"ไม่เห็นด้วยติดต่อ Support ภายใน 30 วัน\" ซึ่ง prototype ไม่ใส่ตามที่ตกลงไว้</li>\n        <li>Stage 4 L3 พูดถึง \"วันทำการ\" และระยะเวลาของช่องทางอื่น ซึ่งอาจเป็นข้อมูลที่ไม่มีหลักฐานรองรับ</li>\n        <li>Stage 2 L1 จัดลำดับแถวให้ตรงกับ L2/L3 (การจอง แล้วตามด้วยสถานะ) ต่างจากไฟล์เดิม</li>\n        <li>ไม่มีตัวเลือก \"ไม่แน่ใจ\" ตามที่ผู้วิจัยเลือก ทั้งที่เอกสารกำหนดให้มีทุกข้อ</li>\n        <li>เบอร์โทรใน Stage 4 ยังเป็น 081-xxx-xxxx และข้อความ consent ยังไม่มีข้อมูลการเก็บรักษาและเลขอนุมัติจริยธรรม</li>\n        <li>คำถามท้ายสุด (manipulation check) เป็นร่างของ prototype ใช้สเกล 1–5</li>\n        <li>ยังไม่มีการจับเวลา สุ่มกลุ่ม หรือเก็บข้อมูลจริง</li>\n      </ul>\n    </details>\n  </div>\n</div>";
+  if (DEV) document.body.insertAdjacentHTML("afterbegin", RBAR_HTML);
   var jump = document.getElementById("jump");
-  jump.innerHTML = SCREENS.map(function (x) { return '<option value="' + x[0] + '">' + h(x[1]) + '</option>'; }).join("");
-  jump.addEventListener("change", function () {
-    if (!DEV) return;
-    state.done[jump.value] = false; // allow answering a revisited stage again (the server keeps only the first answer)
-    if (jump.value === "final") state.finished = false;
-    go(jump.value);
-  });
-  Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
-    b.addEventListener("click", function () {
+  if (DEV) {
+    jump.innerHTML = SCREENS.map(function (x) { return '<option value="' + x[0] + '">' + h(x[1]) + '</option>'; }).join("");
+    jump.addEventListener("change", function () {
       if (!DEV) return;
-      state.level = b.dataset.level;
-      go(state.screen); // re-render and restart the stage timer; later answers are sent with this level (is_test only)
+      state.done[jump.value] = false; // allow answering a revisited stage again (the server keeps only the first answer)
+      if (jump.value === "final") state.finished = false;
+      go(jump.value);
     });
-  });
-  document.getElementById("hideBar").addEventListener("click", function () { document.getElementById("rbar").hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
+      b.addEventListener("click", function () {
+        if (!DEV) return;
+        state.level = b.dataset.level;
+        go(state.screen); // re-render and restart the stage timer; later answers are sent with this level (is_test only)
+      });
+    });
+    document.getElementById("hideBar").addEventListener("click", function () { document.getElementById("rbar").hidden = true; });
+  }
 
   restoreSession();
   if (DEV) {
-    document.getElementById("rbar").hidden = false;
     if (!state.level) state.level = "L2"; // preview level before "start"; the server's assignment replaces it
     window.staybookDebug = { state: state, queue: loadQueue, mockDb: function () { return lsGet(MOCK_DB_KEY); } };
   }

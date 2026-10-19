@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>แบบทดสอบสำหรับการศึกษาการอ่านข้อมูล</title>
+<!-- shown in link previews (LINE, Facebook, Messenger, ...) -->
+<meta name="description" content="แบบทดสอบสั้น ๆ ใช้เวลาประมาณ 4–6 นาที เป็นส่วนหนึ่งของรายวิชา 2206491 โครงการสารสนเทศศึกษา 1 คณะอักษรศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="th_TH">
+<meta property="og:title" content="แบบทดสอบสำหรับการศึกษาการอ่านข้อมูล">
+<meta property="og:description" content="แบบทดสอบสั้น ๆ ใช้เวลาประมาณ 4–6 นาที เป็นส่วนหนึ่งของรายวิชา 2206491 โครงการสารสนเทศศึกษา 1 คณะอักษรศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -170,34 +176,6 @@ td:last-child { font-weight: 600; white-space: nowrap; text-align: right; }
 </style>
 </head>
 <body>
-
-<div class="rbar" id="rbar" hidden>
-  <div class="rbar-in">
-    <b>แถบผู้วิจัย (ผู้เข้าร่วมจะไม่เห็นแถบนี้)</b>
-    <div class="seg" role="group" aria-label="เลือกระดับข้อมูล">
-      <button type="button" data-level="L1" aria-pressed="false">L1</button>
-      <button type="button" data-level="L2" aria-pressed="true">L2</button>
-      <button type="button" data-level="L3" aria-pressed="false">L3</button>
-    </div>
-    <label for="jump" class="small">ไปที่หน้า</label>
-    <select id="jump" aria-label="ไปที่หน้า"></select>
-    <button type="button" class="link" id="hideBar">ซ่อนแถบ</button>
-    <span class="small" id="devStatus"></span>
-    <details>
-      <summary>ประเด็นที่ยังรอผู้วิจัยยืนยัน</summary>
-      <ul>
-        <li>Stage 2 L3: "ส่งอีเมลยืนยันแล้ว" (ข้อ C) และ "แจ้งเจ้าของที่พักแล้ว" (ข้อ B) ตอบคำถามได้ทั้งคู่</li>
-        <li>Stage 2: L2 ใช้ "ส่งอีเมลยืนยันแล้ว" แต่ L3 ใช้ "ส่งอีเมลยืนยันยกเลิกการจองแล้ว" ตาม Google Doc ล่าสุด และใน Google Doc L3 ยังมีบรรทัด "ไม่เห็นด้วยติดต่อ Support ภายใน 30 วัน" ซึ่ง prototype ไม่ใส่ตามที่ตกลงไว้</li>
-        <li>Stage 4 L3 พูดถึง "วันทำการ" และระยะเวลาของช่องทางอื่น ซึ่งอาจเป็นข้อมูลที่ไม่มีหลักฐานรองรับ</li>
-        <li>Stage 2 L1 จัดลำดับแถวให้ตรงกับ L2/L3 (การจอง แล้วตามด้วยสถานะ) ต่างจากไฟล์เดิม</li>
-        <li>ไม่มีตัวเลือก "ไม่แน่ใจ" ตามที่ผู้วิจัยเลือก ทั้งที่เอกสารกำหนดให้มีทุกข้อ</li>
-        <li>เบอร์โทรใน Stage 4 ยังเป็น 081-xxx-xxxx และข้อความ consent ยังไม่มีข้อมูลการเก็บรักษาและเลขอนุมัติจริยธรรม</li>
-        <li>คำถามท้ายสุด (manipulation check) เป็นร่างของ prototype ใช้สเกล 1–5</li>
-        <li>ยังไม่มีการจับเวลา สุ่มกลุ่ม หรือเก็บข้อมูลจริง</li>
-      </ul>
-    </details>
-  </div>
-</div>
 
 <div class="wrap">
   <main id="view" tabindex="-1"></main>
